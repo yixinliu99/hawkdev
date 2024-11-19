@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+service AuctionService {
+    /*
+    Allow listing of items for bidding
+    Start the auction when the current time matches the start time defined by the user
+     */
+    rpc CreateAuction (CreateAuctionRequest) returns (CreateAuctionResponse);
+    rpc UpdateAuction (UpdateAuctionRequest) returns (UpdateAuctionResponse);
+    rpc StartAuction (StartAuctionRequest) returns (StartAuctionResponse);
+    /*
+    Remove auction once bidding is complete and user checkouts out
+     */
+    rpc StopAuction (StopAuctionRequest) returns (StopAuctionResponse);
+    /*
+        Allow bid to be placed, and increment bid amount as users enter new bids
+    Allow multiple bids to be placed at once by different users
+    Bid on an item, and update that bid if another user outbids that user
+     */
+    rpc PlaceBid (PlaceBidRequest) returns (PlaceBidResponse);
+    /*
+    Allowing auction window to be set by the bidder, and begin countdown to the end of the bidding window once auction begins
+     */
+    rpc SetAuctionWindow (SetAuctionWindowRequest) returns (SetAuctionWindowResponse);
+    rpc GetAuctions (GetAuctionRequest) returns (GetAuctionResponse);
+}
+
+message Bid {
+    uint32 bidder_id = 1;
+    string bid_amount = 2;
+    string bid_time = 3;
+}
+
+
+message CreateAuctionRequest {
+    string starting_price = 1;
+    string starting_time = 2;
+    string ending_time = 3;
+    uint32 seller_id = 4;
+    uint32 item_id = 5;
+}
+
+message CreateAuctionResponse {
+    string auction_id = 1;
+}
+
+message UpdateAuctionRequest {
+    string auction_id = 1;
+    string starting_price = 2;
+    string starting_time = 3;
+    string ending_time = 4;
+    uint32 seller_id = 5;
+    uint32 item_id = 6;
+}
+
+message UpdateAuctionResponse {
+    string auction_id = 1;
+}
+
+message StartAuctionRequest {
+    string auction_id = 1;
+}
+
+message StartAuctionResponse {
+    string auction_id = 1;
+}
+
+message StopAuctionRequest {
+    string auction_id = 1;
+}
+
+message StopAuctionResponse {
+    string auction_id = 1;
+}
+
+message PlaceBidRequest {
+    string auction_id = 1;
+    uint32 bidder_id = 2;
+    string bid_amount = 3;
+}
+
+message PlaceBidResponse {
+    string auction_id = 1;
+}
+
+message SetAuctionWindowRequest {
+    string auction_id = 1;
+    string starting_time = 2;
+    string ending_time = 3;
+}
+
+message SetAuctionWindowResponse {
+    string auction_id = 1;
+}
+
+message GetAuctionRequest {
+    string auction_id = 1;
+}
+
+message GetAuctionResponse {
+    string auction_id = 1;
+    string starting_price = 2;
+    string starting_time = 3;
+    string ending_time = 4;
+    uint32 seller_id = 5;
+    uint32 item_id = 6;
+    repeated Bid bids = 7;
+}
