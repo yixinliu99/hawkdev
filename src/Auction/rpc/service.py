@@ -4,10 +4,21 @@ import src.Auction.db.mongoDbManager as mdb
 
 import service_pb2
 import service_pb2_grpc
+from Auction.models import Auction
+
 
 class AuctionService(service_pb2_grpc.AuctionService):
     def CreateAuction(self, request, context):
-        pass
+        auction = Auction(
+            starting_price=request.starting_price,
+            starting_time=request.starting_time,
+            ending_time=request.ending_time,
+            seller_id=request.seller_id,
+            item_id=request.item_id,
+            bids=[]
+        )
+
+        mdb.insert_auction(auction)
 
     def UpdateAuction(self, request, context):
         pass
