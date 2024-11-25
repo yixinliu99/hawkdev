@@ -3,8 +3,8 @@ from typing import Any, Callable
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
-import src.Auction.consts.apiKeys as apiKeys  # Should not be committed to the repo
-import src.Auction.consts.consts as consts
+import Auction.consts.apiKeys as apiKeys  # Should not be committed to the repo
+import Auction.consts.consts as consts
 
 def ensure_connection(func: Callable) -> Callable:
     def wrapper(self, *args, **kwargs):
