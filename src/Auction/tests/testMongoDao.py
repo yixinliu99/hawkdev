@@ -29,6 +29,7 @@ class TestMongoDBManager:
         data = [{'arctic': 'monkeys' + str(uuid.uuid4())}, {'arctic': 'monkeys' + str(uuid.uuid4())}]
         result = mongo_dao.write_to_db('test_collection', data)
         assert len(result) == 2
+        assert isinstance(result[0], str)
 
         for d in data:
             written_data = mock_db['test_collection'].find(d)
@@ -42,6 +43,7 @@ class TestMongoDBManager:
         # read
         written_data = mongo_dao.read_from_db('test_collection', data)
         assert written_data
+        assert written_data[0]['id']
 
     def test_update_db(self, mongo_dao, mock_db):
         data = {'arctic': 'monkeys' + str(uuid.uuid4())}

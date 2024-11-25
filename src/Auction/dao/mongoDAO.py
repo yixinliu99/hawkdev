@@ -38,16 +38,17 @@ class MongoDao:
             self._connect_to_db()
 
     @ensure_connection
-    def write_to_db(self, collection_name: str, data: Any) -> Any:
+    def write_to_db(self, collection_name: str, data: Any) -> list[str]:
         collection = self.db[collection_name]
-        if isinstance(data, list):
-            result = collection.insert_many(data)
-            print(f"Inserted {len(result.inserted_ids)} documents into {collection_name}.")
-            return result.inserted_ids
-        else:
-            result = collection.insert_one(data)
-            print(f"Inserted document with ID: {result.inserted_id} into {collection_name}.")
-            return result.inserted_id
+        if not isinstance(data, list):
+            data = [data]
+        result = collection.insert_many(data)
+
+        # Return list of inserted ids as strings
+        for i, _id in enumerate(result.inserted_ids):
+            result.inserted_ids[i] = str(_id)
+
+        return result.inserted_ids
 
     @ensure_connection
     def read_from_db(self, collection_name, query: dict, projection=None) -> list:
@@ -56,7 +57,11 @@ class MongoDao:
         """
         collection = self.db[collection_name]
         query = {**query, "hidden": {"$ne": True}}
-        results = collection.find(query, projection)
+        results = []
+        for result in collection.find(query, projection):
+            result["id"] = str(result["_id"])
+            results.append(result)
+
         return list(results)
 
     @ensure_connection
