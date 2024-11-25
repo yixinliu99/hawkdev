@@ -34,14 +34,15 @@ message Bid {
 
 message CreateAuctionRequest {
     string starting_price = 1;
-    string starting_time = 2;
+    string starting_time = 2; // ISO 8601 format 2024-11-25T22:04:47Z for example
     string ending_time = 3;
     uint32 seller_id = 4;
     uint32 item_id = 5;
 }
 
 message CreateAuctionResponse {
-    string auction_id = 1;
+    bool success = 1;
+    string auction_id = 2;
 }
 
 message UpdateAuctionRequest {
@@ -54,7 +55,8 @@ message UpdateAuctionRequest {
 }
 
 message UpdateAuctionResponse {
-    string auction_id = 1;
+    bool success = 1;
+    uint32 modified_count = 2;
 }
 
 message StartAuctionRequest {
@@ -62,7 +64,8 @@ message StartAuctionRequest {
 }
 
 message StartAuctionResponse {
-    string auction_id = 1;
+    bool success = 1;
+    string auction_id = 2;
 }
 
 message StopAuctionRequest {
@@ -70,7 +73,8 @@ message StopAuctionRequest {
 }
 
 message StopAuctionResponse {
-    string auction_id = 1;
+    bool success = 1;
+    string auction_id = 2;
 }
 
 message PlaceBidRequest {
@@ -80,7 +84,8 @@ message PlaceBidRequest {
 }
 
 message PlaceBidResponse {
-    string auction_id = 1;
+    bool success = 1;
+    string auction_id = 2;
 }
 
 message SetAuctionWindowRequest {
@@ -90,7 +95,8 @@ message SetAuctionWindowRequest {
 }
 
 message SetAuctionWindowResponse {
-    string auction_id = 1;
+    bool success = 1;
+    string auction_id = 2;
 }
 
 message GetAuctionRequest {
