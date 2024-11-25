@@ -59,7 +59,6 @@ class MongoDao:
         query = {**query, "hidden": {"$ne": True}}
         results = []
         for result in collection.find(query, projection):
-            result["id"] = str(result["_id"])
             results.append(result)
 
         return list(results)

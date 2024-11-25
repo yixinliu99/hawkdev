@@ -1,7 +1,10 @@
-import pytest
-from src.Auction.dao.mongoDAO import MongoDao
-import mongomock
 import uuid
+
+import mongomock
+import pytest
+from bson import ObjectId
+
+from src.Auction.dao.mongoDAO import MongoDao
 
 
 class TestMongoDBManager:
@@ -35,6 +38,12 @@ class TestMongoDBManager:
             written_data = mock_db['test_collection'].find(d)
             assert written_data
 
+    def test_write_to_db_duplicate(self, mongo_dao, mock_db):
+        data = {'arctic': 'monkeys' + str(uuid.uuid4())}
+        mongo_dao.write_to_db('test_collection', data)
+
+        with pytest.raises(Exception):
+            mongo_dao.write_to_db('test_collection', data)
 
     def test_read_from_db(self, mongo_dao, mock_db):
         data = {'arctic': 'monkeys' + str(uuid.uuid4())}
@@ -43,7 +52,7 @@ class TestMongoDBManager:
         # read
         written_data = mongo_dao.read_from_db('test_collection', data)
         assert written_data
-        assert written_data[0]['id']
+        assert written_data[0]['_id']
 
     def test_update_db(self, mongo_dao, mock_db):
         data = {'arctic': 'monkeys' + str(uuid.uuid4())}
@@ -56,6 +65,14 @@ class TestMongoDBManager:
         updated_data = mock_db['test_collection'].find(data)
         assert updated_data
 
+    def test_update_by_id(self, mongo_dao, mock_db):
+        data = {'arctic': 'monkeys' + str(uuid.uuid4())}
+        my_id = ObjectId(mongo_dao.write_to_db('test_collection', data)[0])
+
+        update = {'$set': {'arctic': 'monkeys' + str(uuid.uuid4())}}
+        result = mongo_dao.update_db('test_collection', {'_id': my_id}, update)
+        assert result == 1
+
     def test_delete_from_db_one(self, mongo_dao, mock_db):
         # write
         data = {'arctic': 'monkeys' + str(uuid.uuid4())}
@@ -66,7 +83,6 @@ class TestMongoDBManager:
         assert result == 1
         deleted_data = mongo_dao.read_from_db('test_collection', data)
         assert not deleted_data
-
 
     def test_delete_from_db_many(self, mongo_dao, mock_db):
         # write

@@ -1,11 +1,14 @@
-from concurrent import futures
 import datetime
 import os
-import grpc
+from concurrent import futures
+
 import celery
+import grpc
+from bson import ObjectId
+
 from Auction.celery.celery_config import make_celery_tasks, make_celery
-from Auction.models.models import Auction
 from Auction.dao.mongoDAO import MongoDao
+from Auction.models.auction import Auction
 from Auction.rpc import service_pb2, service_pb2_grpc
 
 
@@ -21,37 +24,33 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
 
         # schedule auction to start at starting_time
         try:
-            auction.create(self.dao)
-            self.capp.send_task("start_auction_task", args=[auction.id], countdown=(auction.starting_time - datetime.datetime.now()).total_seconds())
-            return service_pb2.AuctionResponse(success=True, message="Auction created successfully")
+            auction_id = auction.create(self.dao)[0]
+            self.capp.send_task("start_auction_task", args=[auction.id, self.dao],
+                                countdown=(auction.starting_time - datetime.datetime.now()).total_seconds())
+            return service_pb2.CreateAuctionResponse(success=True, auction_id=auction_id)
         except Exception as e:
             # rollback
-            auction.delete_from_db()
-            return service_pb2.AuctionResponse(success=False, message=str(e))
-
-
-
+            auction.delete(self.dao)
+            return service_pb2.CreateAuctionResponse(success=False, auction_id=auction.id)
 
     def UpdateAuction(self, request, context):
         # get auction by id
         try:
-            auction = Auction.filter({"id": request.auction_id}, self.dao)
+            auction = Auction.filter({"_id": ObjectId(request.auction_id)}, self.dao)
         except Exception as e:
-            return service_pb2.AuctionResponse(success=False, message=str(e))
+            return service_pb2.UpdateAuctionResponse(success=False, modified_count=0)
 
         # update auction
         try:
-            auction.update(request.from_dict())
-            return service_pb2.AuctionResponse(success=True, message="Auction updated successfully")
+            modified_count = auction.update(self.dao)
+            return service_pb2.UpdateAuctionResponse(success=True, modified_count=modified_count)
         except Exception as e:
-            return service_pb2.AuctionResponse(success=False, message=str(e))
-
-
+            return service_pb2.UpdateAuctionResponse(success=False, modified_count=0)
 
     def StartAuction(self, request, context):
         # get auction by id
         try:
-            auction = Auction.filter({"id": request.auction_id}, self.dao)
+            auction = Auction.filter({"_id": ObjectId(request.auction_id)}, self.dao)
         except Exception as e:
             return service_pb2.AuctionResponse(success=False, message=str(e))
 
@@ -61,7 +60,6 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
             return service_pb2.AuctionResponse(success=True, message="Auction started successfully")
         except Exception as e:
             return service_pb2.AuctionResponse(success=False, message=str(e))
-
 
     def StopAuction(self, request, context):
         # get auction by id
@@ -87,19 +85,18 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
         pass
 
 
-def start_server(port):
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+def start_server(rpc_port, rabbitmq_port):
     dao = MongoDao()
-    capp = make_celery("amqp://guest:guest@localhost:5672//")
+    capp = make_celery(f"amqp://guest:guest@localhost:{rabbitmq_port}", dao)
     make_celery_tasks(capp)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server.add_insecure_port(f"[::]:{rpc_port}")
     service_pb2_grpc.add_AuctionServiceServicer_to_server(AuctionService(dao, capp), server)
-    server.add_insecure_port(f"[::]:{port}")
     server.start()
     server.wait_for_termination()
 
 
 if __name__ == "__main__":
-    if os.environ.get("AUCTION_SERVICE_PORT"):
-        start_server(os.environ.get("AUCTION_SERVICE_PORT"))
-    else:
-        start_server(45671)
+    auction_service_rpc_server_port = int(os.environ.get("AUCTION_SERVICE_PORT"))
+    auction_service_rabbitmq_port = int(os.environ.get("AUCTION_SERVICE_RABBITMQ_PORT"))
+    start_server(auction_service_rpc_server_port, auction_service_rabbitmq_port)

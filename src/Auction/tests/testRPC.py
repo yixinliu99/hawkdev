@@ -1,55 +1,101 @@
+from datetime import datetime, timedelta
+
 import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import grpc
-from concurrent import futures
+from bson import ObjectId
 
-import service_pb2
-import service_pb2_grpc
-
-
-# gRPC Server Fixture
-@pytest.fixture
-def grpc_server():
-    from microservice import MyService
-
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    service_pb2_grpc.add_MyServiceServicer_to_server(MyService(), server)
-    port = server.add_insecure_port("[::]:50052")  # Test port
-    server.start()
-    yield f"localhost:{port}"
-    server.stop(None)
+from Auction.rpc import service_pb2, service_pb2_grpc
+from Auction.models.auction import Auction
+from Auction.rpc.service import AuctionService
 
 
-# gRPC Client Fixture
-@pytest.fixture
-def grpc_client(grpc_server):
-    with grpc.insecure_channel(grpc_server) as channel:
-        stub = service_pb2_grpc.MyServiceStub(channel)
-        yield stub
+@pytest.fixture(scope='module')
+def mock_dao():
+    dao = MagicMock()
+
+    return dao
 
 
-# Tests for gRPC Endpoint
-def test_grpc_say_hello_new_user(grpc_client, mocker):
-    # Mock MongoDB
-    mongo_mock = mocker.patch("microservice.greetings_collection")
-    mongo_mock.find_one.return_value = None
+@pytest.fixture(scope='module')
+def mock_celery():
+    return MagicMock()
 
-    # Test new user
-    request = service_pb2.HelloRequest(name="Alice")
-    response = grpc_client.SayHello(request)
-    assert response.message == "Hello, Alice!"
-    mongo_mock.insert_one.assert_called_once_with(
-        {"name": "Alice", "message": "Hello, Alice!"}
+
+@pytest.fixture(scope='module')
+def auction_service(mock_dao, mock_celery):
+    return AuctionService(mock_dao, mock_celery)
+
+
+@pytest.fixture(scope='module')
+def grpc_add_to_server():
+    return service_pb2_grpc.add_AuctionServiceServicer_to_server
+
+
+@pytest.fixture(scope='module')
+def grpc_servicer(auction_service):
+    return auction_service
+
+
+@pytest.fixture(scope='module')
+def grpc_stub_cls():
+    return service_pb2_grpc.AuctionServiceStub
+
+
+def test_create_auction_success(grpc_stub, mock_dao, mock_celery):
+    mock_dao.create.return_value = 1
+    mock_celery.send_task.return_value = None
+    mock_dao.write_to_db.return_value = ["wakemeupwhenseptemberends"]
+
+    request = service_pb2.CreateAuctionRequest(
+        starting_price="100.00",
+        starting_time=(datetime.now() + timedelta(seconds=10)).isoformat(),
+        ending_time=(datetime.now() + timedelta(seconds=20)).isoformat(),
+        item_id=1,
+        seller_id=2,
     )
 
+    response = grpc_stub.CreateAuction(request)
+    assert response.success
+    assert response.auction_id == "wakemeupwhenseptemberends"
+    mock_celery.send_task.assert_called_once()
 
-def test_grpc_say_hello_existing_user(grpc_client, mocker):
-    # Mock MongoDB
-    mongo_mock = mocker.patch("microservice.greetings_collection")
-    mongo_mock.find_one.return_value = {"name": "Bob", "message": "Hello, Bob!"}
 
-    # Test existing user
-    request = service_pb2.HelloRequest(name="Bob")
-    response = grpc_client.SayHello(request)
-    assert response.message == "Hello, Bob!"
-    mongo_mock.insert_one.assert_not_called()
+def test_create_auction_failure(grpc_stub, mock_dao):
+    mock_dao.create.side_effect = Exception()
+
+    request = service_pb2.CreateAuctionRequest(
+        starting_price="100.00",
+        starting_time=(datetime.now() + timedelta(seconds=10)).isoformat(),
+        ending_time=(datetime.now() + timedelta(seconds=20)).isoformat(),
+        item_id=1,
+        seller_id=2,
+    )
+
+    response = grpc_stub.CreateAuction(request)
+    assert not response.success
+
+
+
+def test_update_auction_success(grpc_stub, mock_dao):
+    mock_dao.read_from_db.return_value = {
+        "_id": "auction123",
+        "starting_price": 100.00,
+        "starting_time": "2024-11-25T10:30:00",
+        "ending_time": "2024-11-25T12:30:00",
+        "seller_id": 2,
+        "item_id": 1,
+    }
+    mock_dao.update.return_value = 1
+
+    request = service_pb2.UpdateAuctionRequest(
+        auction_id=str(ObjectId()),
+        starting_price="120.00",
+        starting_time="2024-11-25T10:30:00",
+        ending_time="2024-11-25T12:30:00",
+        seller_id=2,
+        item_id=1,
+    )
+
+    response = grpc_stub.UpdateAuction(request)
+    assert response.success

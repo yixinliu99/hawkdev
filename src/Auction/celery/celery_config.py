@@ -1,10 +1,11 @@
 from celery import Celery
-from Auction.dao.mongoDAO import MongoDao
+from Auction.models.auction import Auction
 
-def make_celery(broker_url):
+def make_celery(broker_url, service_rpc_server_port):
     celery_app = Celery(
         "auction_tasks",
         broker=broker_url,
+        service_rpc_server_port=service_rpc_server_port
     )
 
     celery_app.conf.update(
@@ -12,19 +13,18 @@ def make_celery(broker_url):
         result_serializer="json",
         accept_content=["json"],
         timezone="UTC",
-        enable_utc=True,
+        enable_utc=True
     )
+
+
 
     return celery_app
 
 def make_celery_tasks(celery_app):
     @celery_app.task
-    def start_auction_task(auction_id):
-        dao = MongoDao()  # Initialize DAO
-        auction = dao.get_auction_by_id(auction_id)  # Fetch auction by ID
-        if auction:
-            auction["status"] = "active"  # Update status to "active"
-            dao.update_auction(auction_id, auction)  # Save updated auction
-            return f"Auction {auction_id} started successfully"
-        else:
-            return f"Auction {auction_id} not found"
+    def start_auction_task(auction_id, dao):
+        auction = Auction.filter({"id": auction_id}, dao)
+        auction.start_auction()
+        auction.update(dao)
+
+        return True
