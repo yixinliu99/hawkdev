@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package admin;
+
+service AdminService {
+  rpc StopAuctionEarly (AuctionRequest) returns (Response);
+  rpc RemoveAndBlockUser (UserRequest) returns (Response);
+  rpc AddModifyRemoveCategory (CategoryRequest) returns (Response);
+  rpc ViewFlaggedItems (Empty) returns (FlaggedItemsResponse);
+  rpc ViewActiveAuctions (SortingRequest) returns (ActiveAuctionsResponse);
+  rpc ExamineMetrics (MetricsRequest) returns (MetricsResponse);
+  rpc RespondToEmails (EmailRequest) returns (Response);
+}
+
+message AuctionRequest {
+  string auction_id = 1;
+}
+
+message UserRequest {
+  string user_id = 1;
+}
+
+message CategoryRequest {
+  string action = 1; // "add", "modify", "remove"
+  string category_id = 2;
+  string category_name = 3;
+}
+
+message SortingRequest {
+  string sort_by = 1; // "end_time"
+}
+
+message MetricsRequest {
+  string timeframe = 1; // "day", "week", "month"
+}
+
+message EmailRequest {
+  string email_id = 1;
+  string response_text = 2;
+}
+
+message FlaggedItemsResponse {
+  repeated string flagged_items = 1;
+}
+
+message ActiveAuctionsResponse {
+  repeated string active_auctions = 1;
+}
+
+message MetricsResponse {
+  map<string, int32> metrics = 1; // Example: {"closed_auctions": 100}
+}
+
+message Response {
+  string message = 1;
+}
+
+message Empty {}
