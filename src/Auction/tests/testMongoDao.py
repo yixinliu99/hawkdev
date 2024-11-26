@@ -54,6 +54,15 @@ class TestMongoDBManager:
         assert written_data
         assert written_data[0]['_id']
 
+    def test_read_from_db_by_id(self, mongo_dao, mock_db):
+        data = {'arctic': 'monkeys' + str(uuid.uuid4())}
+
+        my_id = ObjectId(mongo_dao.write_to_db('test_collection', data)[0])
+
+        # read
+        written_data = mongo_dao.read_from_db('test_collection', {'_id': my_id})
+        assert written_data
+
     def test_update_db(self, mongo_dao, mock_db):
         data = {'arctic': 'monkeys' + str(uuid.uuid4())}
         mongo_dao.write_to_db('test_collection', data)

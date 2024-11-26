@@ -62,7 +62,7 @@ def test_create_auction_success(grpc_stub, mock_dao, mock_celery):
 
 
 def test_create_auction_failure(grpc_stub, mock_dao):
-    mock_dao.create.side_effect = Exception()
+    mock_dao.write_to_db.side_effect = Exception()
 
     request = service_pb2.CreateAuctionRequest(
         starting_price="100.00",
@@ -76,20 +76,23 @@ def test_create_auction_failure(grpc_stub, mock_dao):
     assert not response.success
 
 
-
 def test_update_auction_success(grpc_stub, mock_dao):
-    mock_dao.read_from_db.return_value = {
-        "_id": "auction123",
+    fake_id = str(ObjectId())
+    mock_dao.read_from_db.return_value = [{
+        "_id": fake_id,
         "starting_price": 100.00,
         "starting_time": "2024-11-25T10:30:00",
         "ending_time": "2024-11-25T12:30:00",
         "seller_id": 2,
         "item_id": 1,
-    }
+        "active": False,
+        "current_price": 100.00,
+        "bids": []
+    }]
     mock_dao.update.return_value = 1
 
     request = service_pb2.UpdateAuctionRequest(
-        auction_id=str(ObjectId()),
+        auction_id=fake_id,
         starting_price="120.00",
         starting_time="2024-11-25T10:30:00",
         ending_time="2024-11-25T12:30:00",
@@ -99,3 +102,71 @@ def test_update_auction_success(grpc_stub, mock_dao):
 
     response = grpc_stub.UpdateAuction(request)
     assert response.success
+
+
+def test_start_auction_success(grpc_stub, mock_dao):
+    fake_id = str(ObjectId())
+    mock_dao.read_from_db.return_value = [{
+        "_id": fake_id,
+        "starting_price": 100.00,
+        "starting_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.now() + timedelta(seconds=20)).isoformat(),
+        "seller_id": 2,
+        "item_id": 1,
+        "active": False,
+        "current_price": 100.00,
+        "bids": []
+    }]
+    mock_dao.update.return_value = 1
+
+    request = service_pb2.StartAuctionRequest(auction_id=fake_id)
+
+    response = grpc_stub.StartAuction(request)
+    assert response.success
+
+
+def test_stop_auction_success(grpc_stub, mock_dao):
+    fake_id = str(ObjectId())
+    mock_dao.read_from_db.return_value = [{
+        "_id": fake_id,
+        "starting_price": 100.00,
+        "starting_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.now() + timedelta(seconds=20)).isoformat(),
+        "seller_id": 2,
+        "item_id": 1,
+        "active": True,
+        "current_price": 100.00,
+        "bids": []
+    }]
+    mock_dao.update.return_value = 1
+
+    request = service_pb2.StopAuctionRequest(auction_id=fake_id)
+
+    response = grpc_stub.StopAuction(request)
+    assert response.success
+
+def test_place_bid_success(grpc_stub, mock_dao):
+    fake_id = str(ObjectId())
+    mock_dao.read_from_db.return_value = [{
+        "_id": fake_id,
+        "starting_price": 100.00,
+        "starting_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.now() + timedelta(seconds=20)).isoformat(),
+        "seller_id": 2,
+        "item_id": 1,
+        "active": True,
+        "current_price": 100.00,
+        "bids": []
+    }]
+    mock_dao.update.return_value = 1
+
+    request = service_pb2.PlaceBidRequest(
+        auction_id=fake_id,
+        user_id=1,
+        bid_amount=120.00
+    )
+
+    response = grpc_stub.PlaceBid(request)
+    assert response.success
+
+
