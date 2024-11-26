@@ -17,10 +17,7 @@ service AuctionService {/*
     Bid on an item, and update that bid if another user outbids that user
      */
     rpc PlaceBid (PlaceBidRequest) returns (PlaceBidResponse);
-    /*
-    Allowing auction window to be set by the bidder, and begin countdown to the end of the bidding window once auction begins
-     */
-    rpc SetAuctionWindow (SetAuctionWindowRequest) returns (SetAuctionWindowResponse);
+
     rpc GetAuctions (GetAuctionRequest) returns (GetAuctionResponse);}
 
 message Bid {uint32 bidder_id = 1;
