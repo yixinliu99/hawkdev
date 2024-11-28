@@ -1,13 +1,14 @@
 from concurrent import futures
 import grpc
-from mongo_dao import MongoDAO
-from admin_service_pb2 import (
+from admin.dao.mongoDAO import MongoDAO
+from admin.grpc.admin_service_pb2 import (
     Response,
     FlaggedItemsResponse,
     ActiveAuctionsResponse,
     MetricsResponse,
 )
-import admin_service_pb2_grpc
+from admin.consts.consts import *
+import admin.grpc.admin_service_pb2_grpc as admin_service_pb2_grpc
 
 
 class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
@@ -68,8 +69,8 @@ class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     admin_service_pb2_grpc.add_AdminServiceServicer_to_server(AdminService(), server)
-    server.add_insecure_port("[::]:50051")
-    print("Server started on port 50051")
+    server.add_insecure_port(f"[::]:{RPC_PORT}")
+    print(f"Server started on port {RPC_PORT}")
     server.start()
     server.wait_for_termination()
 
