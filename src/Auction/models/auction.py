@@ -23,28 +23,31 @@ class Auction(Model):
         return {"item_id": self.item_id, "seller_id": self.seller_id, "active": self.active,
                 "starting_time": datetime.datetime.isoformat(self.starting_time),
                 "ending_time": datetime.datetime.isoformat(self.ending_time), "starting_price": self.starting_price,
-                "current_price": self.current_price, "bids": self.bids, "id": self.id}
+                "current_price": self.current_price, "bids": self.bids, "_id": self.id}
 
     @staticmethod
     def from_dict(auction_dict: dict):
-        return Auction(item_id=auction_dict["item_id"], seller_id=auction_dict["seller_id"],
+        auction = Auction(item_id=auction_dict["item_id"], seller_id=auction_dict["seller_id"],
                        active=auction_dict["active"], starting_time=auction_dict["starting_time"],
                        ending_time=auction_dict["ending_time"], starting_price=auction_dict["starting_price"],
-                       current_price=auction_dict["current_price"], bids=auction_dict["bids"],
-                       auction_id=auction_dict["id"])
+                       current_price=auction_dict["current_price"], bids=auction_dict["bids"])
+        auction.id = auction_dict["_id"] if "_id" in auction_dict else None
+
+        return auction
 
     def create(self, dao: MongoDao) -> list[str]:
-        return dao.write_to_db(AUCTIONS_COLLECTION, self.to_dict())
+        create_dict = self.to_dict()
+        del create_dict["_id"]
+        return dao.write_to_db(AUCTIONS_COLLECTION, create_dict)
 
     def update(self, dao: MongoDao) -> int:
-        return dao.update_db(AUCTIONS_COLLECTION, {"_id": self.id}, self.to_dict())
+        update_dict = self.to_dict()
+        del update_dict["_id"]
+        return dao.update_db(AUCTIONS_COLLECTION, {"_id": self.id}, {"$set": update_dict})
 
     @staticmethod
     def filter(query: dict, dao: MongoDao) -> list:
         res = dao.read_from_db(AUCTIONS_COLLECTION, query)
-        for auction in res:
-            auction["id"] = str(auction["_id"])
-            auction.pop("_id")
         return [Auction.from_dict(auction) for auction in res]
 
     def delete(self, dao: MongoDao):
@@ -57,10 +60,14 @@ class Auction(Model):
             raise Exception(msg)
 
         # update auction status
-        return dao.update_db(AUCTIONS_COLLECTION, {"id": self.id}, {"active": True})
+        query = {"_id": self.id}
+        update = {"$set": {"active": True}}
+        return dao.update_db(AUCTIONS_COLLECTION, query, update)
 
     def stop_auction(self, dao: MongoDao):
-        return dao.update_db(AUCTIONS_COLLECTION, {"id": self.id}, {"active": False})
+        query = {"_id": self.id}
+        update = {"$set": {"active": False}}
+        return dao.update_db(AUCTIONS_COLLECTION, query, update)
 
     def place_bid(self, user_id: str, bid_amount: float, dao: MongoDao):
         bid = Bid(auction_id=self.id, user_id=user_id, bid_amount=bid_amount)
@@ -78,7 +85,5 @@ class Auction(Model):
             return False, "Starting price must be positive"
         if self.current_price < 0:
             return False, "Current price must be positive"
-        if self.starting_time <= datetime.datetime.now(self.starting_time.tzinfo):
-            return False, "Starting time must be in the future"
 
         return True, ""

@@ -4,7 +4,7 @@ from Auction.dao.mongoDAO import MongoDao
 
 
 class Model(abc.ABC):
-    def __init__(self, model_id: int):
+    def __init__(self, model_id):
         self.id = model_id
 
     def to_dict(self):
