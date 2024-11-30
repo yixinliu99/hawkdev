@@ -1,54 +1,30 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
 import jwt
 import datetime
 from app.models.user import User
+from db import db
 
-# Initialize the database and user model (imported from app.py)
-#from app import db
-from functools import wraps
+user_bp = Blueprint("users", __name__)
 
-# Define User model (should be imported from app.py ideally)
-
-
-# Define the Blueprint for user-related routes
-user_bp = Blueprint('user_bp', __name__)
-
-# Decorator to check if the user is authenticated
-def token_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        token = request.headers.get('x-access-token')
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 403
-        try:
-            data = jwt.decode(token, 'secret', algorithms=["HS256"])
-            current_user = User.query.filter_by(id=data['user_id']).first()
-        except Exception as e:
-            return jsonify({'message': 'Token is invalid!'}), 403
-        return f(current_user, *args, **kwargs)
-    return decorated_function
-
-# User sign-up route
+# User sign-up endpoint
 @user_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json()
-
     # Extract the data from the request
-    name = data.get('name')
+    username = data.get('username')
     email = data.get('email')
-    phone_number = data.get('phoneNumber')
+    phone_number = data.get('phone_number')
     address = data.get('address')
     password = data.get('password')
-    user_type = data.get('userType')
+    user_type = data.get('user_type')
 
-    # Hash the password
-    hashed_password = generate_password_hash(password)
+    # Hash the password using the default 'pbkdf2:sha256' method
+    hashed_password = generate_password_hash(password, method="scrypt")
 
     # Create a new user instance
     new_user = User(
-        name=name,
+        username=username,
         email=email,
         phone_number=phone_number,
         address=address,
@@ -63,17 +39,16 @@ def signup():
         return jsonify({"message": "User created successfully!"}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"message": f"Error creating user: {str(e)}"}), 500
+        return jsonify({"message": "Error creating user: " + str(e)}), 500
 
-# User login route
+# User login endpoint
 @user_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
 
     # Extract the data from the request
-    email = data.get('email')
+    email = data.get('email').strip() 
     password = data.get('password')
-
     # Find the user by email
     user = User.query.filter_by(email=email).first()
 
@@ -85,39 +60,65 @@ def login():
     token = jwt.encode({
         'user_id': user.id,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-    }, 'secret', algorithm='HS256')
-
+    }, 'supersecretkey', algorithm='HS256')
     return jsonify({'token': token}), 200
 
-# Get user profile
+# Fetch user profile
 @user_bp.route("/profile", methods=["GET"])
-@token_required
-def get_profile(current_user):
-    # Return user profile data
-    user_data = {
-        'id': current_user.id,
-        'name': current_user.name,
-        'email': current_user.email,
-        'phone_number': current_user.phone_number,
-        'address': current_user.address,
-        'user_type': current_user.user_type
-    }
-    return jsonify({'user': user_data})
+def get_profile():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        #decoded = token.split(" ")[1]
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256']) 
+        user_id = decoded.get("user_id")
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+
+        return jsonify({
+            "id": user.id,
+            "name": user.username,
+            "email": user.email,
+            "phoneNumber": user.phone_number,
+            "address": user.address,
+            "userType": user.user_type
+        }), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Invalid token"}), 401
 
 # Update user profile
 @user_bp.route("/profile", methods=["PUT"])
-@token_required
-def update_profile(current_user):
-    data = request.get_json()
+def update_profile():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
 
-    # Update the user data with the new values
-    current_user.name = data.get('name', current_user.name)
-    current_user.email = data.get('email', current_user.email)
-    current_user.phone_number = data.get('phone_number', current_user.phone_number)
-    current_user.address = data.get('address', current_user.address)
-    current_user.user_type = data.get('user_type', current_user.user_type)
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"message": "User not found"}), 404
 
-    # Commit the changes to the database
-    db.session.commit()
+        data = request.get_json()
+        user.username = data.get("name", user.username)
+        user.phone_number = data.get("phone_number", user.phone_number)
+        user.address = data.get("address", user.address)
+        user.user_type = data.get("user_type", user.user_type)
 
-    return jsonify({'message': 'Profile updated successfully!'}), 200
+        if "password" in data and data["password"]:
+            user.password = generate_password_hash(data["password"], method="scrypt")
+        db.session.commit()
+
+        return jsonify({"message": "Profile updated successfully"}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Invalid token"}), 401
