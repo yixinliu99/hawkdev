@@ -1,13 +1,17 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const token = localStorage.getItem('token'); 
   const navigate = useNavigate();
+  const location = useLocation(); // Get the current location
 
-  // If there's no token, don't render Navbar
-  if (!token) {
-    return null;
+  // Paths where the Navbar should not be displayed
+  const excludedPaths = ['/login', '/signup'];
+
+  // Check if the current path is in the excluded paths
+  if (excludedPaths.includes(location.pathname)) {
+    return null; // Do not render Navbar
   }
 
   const handleLogout = () => {
@@ -35,6 +39,5 @@ const Navbar = () => {
     </nav>
   );
 };
-
 
 export default Navbar;
