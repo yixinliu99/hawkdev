@@ -22,7 +22,7 @@ const Bidding = () => {
 
   return (
     <div>
-      <Navbar /> {/* Include the Navbar here */}
+      {/*<Navbar />  Include the Navbar here */}
       <h2>Items for Bidding</h2>
       <div>
         {items.length === 0 ? (

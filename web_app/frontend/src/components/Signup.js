@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import userService from '../services/userService';
 
 const Signup = () => {
-  const [name, setName] = useState('');
+  const [username, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phone_number, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState('user'); 
+  const [user_type, setUserType] = useState('user'); 
   const [error, setError] = useState('');
   const navigate = useNavigate(); 
 
@@ -16,7 +16,7 @@ const Signup = () => {
     e.preventDefault();
     try {
       
-      const userData = { name, email, phoneNumber, address, password, userType };
+      const userData = { username, email, phone_number, address, password, user_type };
       await userService.signup(userData);
       navigate('/login'); 
     } catch (err) {
@@ -32,7 +32,7 @@ const Signup = () => {
           <label>Name:</label>
           <input
             type="text"
-            value={name}
+            value={username}
             onChange={(e) => setName(e.target.value)}
             required
           />
@@ -50,7 +50,7 @@ const Signup = () => {
           <label>Phone Number:</label>
           <input
             type="text"
-            value={phoneNumber}
+            value={phone_number}
             onChange={(e) => setPhoneNumber(e.target.value)}
             required
           />
@@ -76,7 +76,7 @@ const Signup = () => {
         <div>
           <label>User Type:</label>
           <select
-            value={userType}
+            value={user_type}
             onChange={(e) => setUserType(e.target.value)}
           >
             <option value="user">User</option>
