@@ -4,6 +4,7 @@ import 'font-awesome/css/font-awesome.min.css';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import Bidding from './components/Bidding';
+import Profile from './components/Profile';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -11,11 +12,11 @@ function App() {
 
   return (
     <Router>
-      {/* Only show Navbar if there's a valid token */}
-      {token && <Navbar />}  {/* Conditionally render Navbar */}
+      <Navbar />  
       <div className="App">
         <Routes>
           <Route path="/signup" element={<Signup />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/bidding" element={<Bidding />} />
           {/* Add other routes as necessary */}
