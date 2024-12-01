@@ -5,6 +5,7 @@ import datetime
 from app.models.user import User
 from db import db, mongo
 import requests
+from app.grpc.user_client import get_user_bids_from_auction
 
 user_bp = Blueprint("users", __name__)
 
@@ -43,7 +44,7 @@ def signup():
         return jsonify({"message": "Error creating user: " + str(e)}), 500
 
 # User login endpoint
-@user_bp.route("/login", methods=["POST"])
+@user_bp.route("/", methods=["POST"])
 def login():
     data = request.get_json()
 
@@ -62,11 +63,11 @@ def login():
         'user_id': user.id,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     }, 'supersecretkey', algorithm='HS256')
-    return jsonify({'token': token}), 200
+    return jsonify({'token': token, "user_id": user.id}), 200
 
 # Fetch user profile
-@user_bp.route("/profile", methods=["GET"])
-def get_profile():
+@user_bp.route("/profile/<user_id>", methods=["GET"])
+def get_profile(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -94,8 +95,8 @@ def get_profile():
         return jsonify({"message": "Invalid token"}), 401
 
 # Update user profile
-@user_bp.route("/profile", methods=["PUT"])
-def update_profile():
+@user_bp.route("/profile/<user_id>", methods=["PUT"])
+def update_profile(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -124,8 +125,8 @@ def update_profile():
     except Exception as e:
         return jsonify({"message": "Invalid token"}), 401
 
-@user_bp.route("/watchlist", methods=["POST"])
-def add_to_watchlist():
+@user_bp.route("/watchlist/<user_id>", methods=["POST"])
+def add_to_watchlist(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -161,8 +162,8 @@ def add_to_watchlist():
         return jsonify({"message": "Error adding item to watchlist: " + str(e)}), 500
 
 # Get user's watchlist (MongoDB)
-@user_bp.route("/watchlist", methods=["GET"])
-def get_watchlist():
+@user_bp.route("/watchlist/<user_id>", methods=["GET"])
+def get_watchlist(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -208,8 +209,8 @@ def get_watchlist():
         return jsonify({"message": "Error fetching watchlist: " + str(e)}), 500
 
 # Remove item from watchlist (MongoDB)
-@user_bp.route("/watchlist", methods=["DELETE"])
-def remove_from_watchlist():
+@user_bp.route("/watchlist/<user_id>", methods=["DELETE"])
+def remove_from_watchlist(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -239,8 +240,8 @@ def remove_from_watchlist():
         return jsonify({"message": "Error removing item from watchlist: " + str(e)}), 500
 
 
-@user_bp.route("/cart", methods=["POST"])
-def add_to_cart():
+@user_bp.route("/cart/<user_id>", methods=["POST"])
+def add_to_cart(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -297,8 +298,8 @@ def add_to_cart():
         return jsonify({"message": "Error adding item to cart: " + str(e)}), 500
 
 
-@user_bp.route("/cart", methods=["GET"])
-def get_cart():
+@user_bp.route("/cart/<user_id>", methods=["GET"])
+def get_cart(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -314,8 +315,8 @@ def get_cart():
     except Exception as e:
         return jsonify({"message": "Error fetching cart: " + str(e)}), 500
 
-@user_bp.route("/cart", methods=["DELETE"])
-def remove_from_cart():
+@user_bp.route("/cart/<user_id>", methods=["DELETE"])
+def remove_from_cart(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -338,8 +339,8 @@ def remove_from_cart():
         return jsonify({"message": "Error removing item from cart: " + str(e)}), 500
 
 
-@user_bp.route("/cart/checkout", methods=["GET"])
-def checkout_cart():
+@user_bp.route("/cart/checkout/<user_id>", methods=["GET"])
+def checkout_cart(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -392,8 +393,8 @@ def checkout_cart():
         return jsonify({"message": "Error fetching cart: " + str(e)}), 500
 
 
-@user_bp.route("/cart/checkout", methods=["POST"])
-def process_checkout():
+@user_bp.route("/cart/checkout/<user_id>", methods=["POST"])
+def process_checkout(user_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -457,3 +458,53 @@ def process_checkout():
         return jsonify({"message": "Token has expired"}), 401
     except Exception as e:
         return jsonify({"message": "Error processing checkout: " + str(e)}), 500
+
+
+@user_bp.route("/bids/<user_id>", methods=["GET"])
+def get_user_bids(user_id):
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        # Decode the token to get user ID
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+
+        # Call the Auction Microservice to get auctions the user has bid on
+        auctions = get_user_bids_from_auction(user_id)
+
+        if not auctions:
+            return jsonify({"message": "No active bids found"}), 404
+
+        bids = []
+        for auction in auctions:
+            item_id = auction.get('item_id')
+            # Fetch item details from Item Microservice
+            item_details = get_item_details(item_id)
+            if item_details:
+                bids.append({
+                    "item_id": item_id,
+                    #"item_name": item_details["name"],
+                    "seller_id" : item_details.get('seller_id'),
+                    "current_bid": auction.get("current_price"),
+                    "starting_price": auction.get("starting_price"),
+                    #"bid_amount": auction["bids"][-1]["bid_amount"],  # Assuming the last bid is the user's
+                    "end_time": auction.get("ending_time"),
+                    "status": "active" if auction.get("active") else "closed"
+                })
+
+        return jsonify({"bids": bids}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error fetching bids: " + str(e)}), 500
+
+def get_item_details(item_id):
+    """Fetch item details from Item Microservice."""
+    item_service_url = f"http://localhost:8081/api/items/{item_id}"  
+    response = requests.get(item_service_url)
+    if response.status_code == 200:
+        return response.json()
+    return None
