@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from app.routes.user_routes import user_bp
-from db import db
+from db import db, mongo
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -11,6 +11,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/userdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'supersecretkey'  # Use an environment variable in production
+app.config['MONGO_URI'] = 'mongodb://localhost:27017/auction_site'
 
 # Initialize extensions
 #db = SQLAlchemy(app)
@@ -19,6 +20,8 @@ CORS(app)
 # Register blueprints
 app.register_blueprint(user_bp, url_prefix="/api/users")
 db.init_app(app)
+mongo.init_app(app)
+
 
 # Global error handler
 @app.errorhandler(Exception)

@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 from app.models.user import User
-from db import db
+from db import db, mongo
 
 user_bp = Blueprint("users", __name__)
 
@@ -122,3 +122,119 @@ def update_profile():
         return jsonify({"message": "Token has expired"}), 401
     except Exception as e:
         return jsonify({"message": "Invalid token"}), 401
+
+@user_bp.route("/watchlist", methods=["POST"])
+def add_to_watchlist():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+        
+        # Fetch user from MySQL
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+
+        data = request.get_json()
+        item_id = data.get("item_id")
+        keyword = data.get("keyword")  # User-defined keyword
+        category = data.get("category")  # User-defined category
+
+        # Store watchlist in MongoDB
+        watchlist_item = {
+            "user_id": user_id,
+            "item_id": item_id,
+            "keyword": keyword,
+            "category": category
+        }
+
+        mongo.db.watchlist.insert_one(watchlist_item)
+        return jsonify({"message": "Item added to watchlist"}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error adding item to watchlist: " + str(e)}), 500
+
+# Get user's watchlist (MongoDB)
+@user_bp.route("/watchlist", methods=["GET"])
+def get_watchlist():
+    token = request.headers.get('Authorization')
+    
+    print(token)
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+
+        # Retrieve watchlist from MongoDB
+        watchlist_items = mongo.db.watchlist.find({"user_id": user_id})
+        # Bulk fetch item details
+        item_ids = [watchlist_item['item_id'] for watchlist_item in watchlist_items]
+        items_in_bulk = mongo.db.items.find({"_id": {"$in": item_ids}})
+        
+        # Create a dictionary to quickly lookup items by ID
+        item_dict = {str(item['_id']): item for item in items_in_bulk}
+
+        items = []
+        for watchlist_item in watchlist_items:
+            #item = mongo.db.items.find_one({"_id": watchlist_item['item_id']})
+            item = item_dict.get(str(watchlist_item['item_id']))
+            if item:
+                items.append({
+                    "item_id": item['_id'],
+                    "item_name": item['name'],
+                    "keyword": watchlist_item['keyword'],
+                    "category": watchlist_item['category']
+                })
+            else:
+                # If item not found in item service, add a placeholder or skip
+                items.append({
+                    "item_id": watchlist_item['item_id'],
+                    "item_name": "Item not found",
+                    "keyword": watchlist_item['keyword'],
+                    "category": watchlist_item['category']
+                })
+
+        return jsonify({"watchlist": items}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error fetching watchlist: " + str(e)}), 500
+
+# Remove item from watchlist (MongoDB)
+@user_bp.route("/watchlist", methods=["DELETE"])
+def remove_from_watchlist():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+
+        # Fetch user from MySQL
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+
+        data = request.get_json()
+        item_id = data.get("item_id")
+
+        # Remove item from the user's watchlist in MongoDB
+        result = mongo.db.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
+        if result.deleted_count == 0:
+            return jsonify({"message": "Item not found in watchlist"}), 404
+
+        return jsonify({"message": "Item removed from watchlist"}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error removing item from watchlist: " + str(e)}), 500
