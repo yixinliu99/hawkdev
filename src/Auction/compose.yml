@@ -1,0 +1,5 @@
+services:
+  rpc:
+    build: .
+    ports:
+      - "50010:50051"
