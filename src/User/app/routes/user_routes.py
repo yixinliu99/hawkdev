@@ -163,8 +163,6 @@ def add_to_watchlist():
 @user_bp.route("/watchlist", methods=["GET"])
 def get_watchlist():
     token = request.headers.get('Authorization')
-    
-    print(token)
     if not token:
         return jsonify({"message": "Missing token"}), 401
 
@@ -173,36 +171,36 @@ def get_watchlist():
         user_id = decoded.get("user_id")
 
         # Retrieve watchlist from MongoDB
-        watchlist_items = mongo.db.watchlist.find({"user_id": user_id})
+        watchlist_items_cursor = mongo.db.watchlist.find({"userId": user_id})
+        watchlist_items = list(watchlist_items_cursor)  # Convert cursor to a list
+
         # Bulk fetch item details
-        item_ids = [watchlist_item['item_id'] for watchlist_item in watchlist_items]
+        item_ids = [watchlist_item['itemId'] for watchlist_item in watchlist_items]
         items_in_bulk = mongo.db.items.find({"_id": {"$in": item_ids}})
-        
+
         # Create a dictionary to quickly lookup items by ID
         item_dict = {str(item['_id']): item for item in items_in_bulk}
 
         items = []
         for watchlist_item in watchlist_items:
-            #item = mongo.db.items.find_one({"_id": watchlist_item['item_id']})
-            item = item_dict.get(str(watchlist_item['item_id']))
+            item = item_dict.get(str(watchlist_item['itemId']))
             if item:
                 items.append({
                     "item_id": item['_id'],
                     "item_name": item['name'],
-                    "keyword": watchlist_item['keyword'],
-                    "category": watchlist_item['category']
+                    "keyword": watchlist_item.get('keyword', ''),  # Use .get() to handle missing fields
+                    "category": watchlist_item.get('category', '')
                 })
             else:
                 # If item not found in item service, add a placeholder or skip
                 items.append({
-                    "item_id": watchlist_item['item_id'],
+                    "item_id": watchlist_item['itemId'],
                     "item_name": "Item not found",
-                    "keyword": watchlist_item['keyword'],
-                    "category": watchlist_item['category']
+                    "keyword": watchlist_item.get('keyword', ''),
+                    "category": watchlist_item.get('category', '')
                 })
 
         return jsonify({"watchlist": items}), 200
-
     except jwt.ExpiredSignatureError:
         return jsonify({"message": "Token has expired"}), 401
     except Exception as e:
