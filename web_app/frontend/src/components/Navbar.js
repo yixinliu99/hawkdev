@@ -7,7 +7,7 @@ const Navbar = () => {
   const location = useLocation(); // Get the current location
 
   // Paths where the Navbar should not be displayed
-  const excludedPaths = ['/login', '/signup'];
+  const excludedPaths = ['/', '/signup'];
 
   // Check if the current path is in the excluded paths
   if (excludedPaths.includes(location.pathname)) {
@@ -16,7 +16,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token'); // Remove token from localStorage
-    navigate('/login'); // Redirect to login page
+    navigate('/'); // Redirect to login page
   };
 
   return (

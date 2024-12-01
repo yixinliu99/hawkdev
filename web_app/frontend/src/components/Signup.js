@@ -18,7 +18,7 @@ const Signup = () => {
       
       const userData = { username, email, phone_number, address, password, user_type };
       await userService.signup(userData);
-      navigate('/login'); 
+      navigate('/'); 
     } catch (err) {
       setError('Sign-up failed. Please try again.');
     }
