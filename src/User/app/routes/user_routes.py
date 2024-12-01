@@ -4,6 +4,7 @@ import jwt
 import datetime
 from app.models.user import User
 from db import db, mongo
+import requests
 
 user_bp = Blueprint("users", __name__)
 
@@ -236,3 +237,223 @@ def remove_from_watchlist():
         return jsonify({"message": "Token has expired"}), 401
     except Exception as e:
         return jsonify({"message": "Error removing item from watchlist: " + str(e)}), 500
+
+
+@user_bp.route("/cart", methods=["POST"])
+def add_to_cart():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        # Decode the token to get user ID
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+
+        # Extract item ID and quantity from the request
+        data = request.get_json()
+        item_id = data.get("item_id")
+        quantity = data.get("quantity", 1)  # Default to 1 if not provided
+
+        if not item_id:
+            return jsonify({"message": "Item ID is required"}), 400
+
+        # Fetch item details from item microservice
+        item_service_url = f"http://localhost:8081/api/items/{item_id}"  # Adjust this URL
+        item_response = requests.get(item_service_url)
+
+        if item_response.status_code != 200:
+            return jsonify({"message": "Item not found in item service"}), 404
+
+        item_data = item_response.json()
+
+        # Check if the item already exists in the cart
+        cart_item = mongo.db.cart.find_one({"user_id": user_id, "item_id": item_id})
+        if cart_item:
+            # Increment quantity if the item already exists
+            mongo.db.cart.update_one(
+                {"user_id": user_id, "item_id": item_id},
+                {"$inc": {"quantity": quantity}}
+            )
+        else:
+            # Insert the item into the cart with full details
+            mongo.db.cart.insert_one({
+                "user_id": user_id,
+                "item_id": item_id,
+                "shipping_cost": item_data.get('shipping_cost'),  
+                "description": item_data.get('description'),
+                "flagged": item_data.get('flagged'),
+                "category": item_data.get('category'),
+                "keywords": item_data.get('keywords'),
+                "starting_price": item_data.get('starting_price'),
+                "quantity": quantity  # Use the quantity from the request
+            })
+
+        return jsonify({"message": "Item added to cart"}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error adding item to cart: " + str(e)}), 500
+
+
+@user_bp.route("/cart", methods=["GET"])
+def get_cart():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+        cart_items = list(mongo.db.cart.find({"user_id": user_id}))
+
+        return jsonify({"cart": cart_items}), 200
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error fetching cart: " + str(e)}), 500
+
+@user_bp.route("/cart", methods=["DELETE"])
+def remove_from_cart():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+        data = request.get_json()
+        item_id = data.get("item_id")
+
+        result = mongo.db.cart.delete_one({"user_id": user_id, "item_id": item_id})
+        if result.deleted_count == 0:
+            return jsonify({"message": "Item not found in cart"}), 404
+
+        return jsonify({"message": "Item removed from cart"}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error removing item from cart: " + str(e)}), 500
+
+
+@user_bp.route("/cart/checkout", methods=["GET"])
+def checkout_cart():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        # Decode the token to get user ID
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+
+        # Retrieve user's cart items from MongoDB
+        cart_items = mongo.db.cart.find({"user_id": user_id})
+        
+        if not cart_items:
+            return jsonify({"message": "Cart is empty"}), 400
+
+        total_amount = 0  # Initialize total amount
+
+        items = []
+        for cart_item in cart_items:
+            item_id = cart_item.get("item_id")
+            #item_name = cart_item.get("item_name")
+            item_price = cart_item.get("starting_price", 0)
+            quantity = cart_item.get("quantity", 1)
+            shipping_cost = cart_item.get("shipping_cost", 0)
+
+            # Calculate the item total (price * quantity + shipping)
+            item_total = (item_price + shipping_cost) * quantity
+
+            # Add the item total to the overall total
+            total_amount += item_total
+
+            items.append({
+                "item_id": item_id,
+                #"item_name": item_name,
+                "quantity": quantity,
+                "price": item_price,
+                "shipping_cost": shipping_cost,
+                "item_total": item_total
+            })
+
+        # Add total amount to the response
+        return jsonify({
+            "cart_items": items,
+            "total_amount": total_amount
+        }), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error fetching cart: " + str(e)}), 500
+
+
+@user_bp.route("/cart/checkout", methods=["POST"])
+def process_checkout():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        # Decode the token to get the user ID
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+
+        # Fetch user's cart from MongoDB
+        cart_items = mongo.db.cart.find({"user_id": user_id})
+
+        if not cart_items:
+            return jsonify({"message": "Cart is empty"}), 400
+
+        total_amount = 0
+        order_items = []
+
+        # Calculate the total amount and prepare order items using details already in the cart
+        for cart_item in cart_items:
+            item_id = cart_item["item_id"]
+            quantity = cart_item["quantity"]
+
+            # Fetch item details from the cart entry itself
+            #item_name = cart_item.get("item_name")  
+            item_price = cart_item.get("starting_price")
+            shipping_cost = cart_item.get("shipping_cost")
+
+            if not item_price is None or shipping_cost is None:
+                return jsonify({"message": f"Item {item_id} missing necessary details"}), 400
+
+            # Calculate the total for this item
+            item_total = (item_price + shipping_cost) * quantity
+            total_amount += item_total
+
+            order_items.append({
+                "item_id": item_id,
+                "quantity": quantity,
+                #"item_name": item_name,
+                "total_price": item_total
+            })
+
+        # Proceed with order creation (could be stored in a separate collection or service)
+        order = {
+            "user_id": user_id,
+            "total_amount": total_amount,
+            "items": order_items,
+            "status": "processing",
+            "created_at": datetime.datetime.utcnow()
+        }
+        
+        # Store order in the database
+        mongo.db.orders.insert_one(order)
+
+        # Clear the cart after checkout
+        mongo.db.cart.delete_many({"user_id": user_id})
+
+        return jsonify({"message": "Checkout successful", "order_id": str(order["_id"])}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception as e:
+        return jsonify({"message": "Error processing checkout: " + str(e)}), 500
