@@ -19,8 +19,8 @@ const logout = () => {
 };
 
 
-const getProfile = (token) => {
-  return axios.get(`${API_URL}/users/profile`, {
+const getProfile = (token, userId) => {
+  return axios.get(`${API_URL}/users/profile/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };

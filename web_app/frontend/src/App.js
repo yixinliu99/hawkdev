@@ -16,9 +16,9 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/signup" element={<Signup />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:user_id" element={<Profile />} />
           <Route path="/" element={<Login />} />
-          <Route path="/bidding" element={<Bidding />} />
+          <Route path="/bidding/:user_id" element={<Bidding />} />
           {/* Add other routes as necessary */}
         </Routes>
       </div>

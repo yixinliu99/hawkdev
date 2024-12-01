@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import userService from '../services/userService'; // Service to interact with user microservice
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const Profile = () => {
   const [user, setUser] = useState({
@@ -13,19 +13,20 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { user_id } = useParams();
 
   const token = localStorage.getItem('token'); // Get token from localStorage
 
   useEffect(() => {
     if (!token) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
     // Fetch the user profile from the backend
     const fetchProfile = async () => {
       try {
-        const response = await userService.getProfile(token);
+        const response = await userService.getProfile(token, user_id);
         setUser(response.data);
         setLoading(false);
       } catch (err) {

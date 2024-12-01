@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; 
+import { useNavigate, Link, useParams } from 'react-router-dom'; 
 import userService from '../services/userService';
 
 const Login = () => {
@@ -7,15 +7,16 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate(); 
+  const user_id = useParams();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await userService.login({ email, password });
   
-      if (response.token) {
+      if (response.token && response.user_id) {
         localStorage.setItem('token', response.token); 
-        navigate('/bidding'); 
+        navigate(`/bidding/${response.user_id}`); 
       } else {
         setError('Login failed. Please check your credentials.');
       }

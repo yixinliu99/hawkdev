@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import itemService from '../services/itemService'; 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './Navbar'; 
 
 const Bidding = () => {
   const [items, setItems] = useState([]);
   const navigate = useNavigate();
+  const user_id = useParams();
 
   useEffect(() => {
     const fetchItems = async () => {
