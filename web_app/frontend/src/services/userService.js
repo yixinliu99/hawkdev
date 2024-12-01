@@ -11,6 +11,7 @@ const login = async (userData) => {
   const response = await axios.post(`${API_URL}/users/`, userData);
   console.log('Login successful');
   localStorage.setItem('authToken', response.data.token); 
+  localStorage.setItem('userId', response.data.user_id)
   return response.data;
 };
 
@@ -25,8 +26,8 @@ const getProfile = (token, userId) => {
   });
 };
 
-const updateProfile = (token, data) => {
-  return axios.put(`${API_URL}/users/profile`, data, {
+const updateProfile = (token, userId, data) => {
+  return axios.put(`${API_URL}/users/profile/${userId}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };

@@ -44,7 +44,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      await userService.updateProfile(token, user);
+      await userService.updateProfile(token, user_id, user);
       alert('Profile updated successfully');
     } catch (err) {
       setError('Failed to update profile');
