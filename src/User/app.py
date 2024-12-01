@@ -8,7 +8,7 @@ from db import db
 app = Flask(__name__)
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/userdb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/userdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'supersecretkey'  # Use an environment variable in production
 

@@ -20,7 +20,7 @@ def signup():
     user_type = data.get('user_type')
 
     # Hash the password using the default 'pbkdf2:sha256' method
-    hashed_password = generate_password_hash(password, method="scrypt")
+    hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
 
     # Create a new user instance
     new_user = User(
@@ -113,7 +113,7 @@ def update_profile():
         user.user_type = data.get("user_type", user.user_type)
 
         if "password" in data and data["password"]:
-            user.password = generate_password_hash(data["password"], method="scrypt")
+            user.password = generate_password_hash(data["password"], method="pbkdf2:sha256")
         db.session.commit()
 
         return jsonify({"message": "Profile updated successfully"}), 200
