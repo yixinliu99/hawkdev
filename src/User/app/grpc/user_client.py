@@ -22,3 +22,22 @@ def get_user_bids_from_auction(user_id):
         except grpc.RpcError as e:
             print(f"Error calling GetAuctions: {e}")
             return None
+
+def create_auction(item_id, seller_id, starting_time, ending_time, starting_price):
+    # Establish connection to the auction microservice's gRPC server
+    channel = grpc.insecure_channel('localhost:50010')  # Assuming the auction microservice runs on port 5001
+    stub = user_pb2_grpc.AuctionServiceStub(channel)
+
+    # Prepare the request
+    request = user_pb2.CreateAuctionRequest(
+        item_id=item_id,
+        seller_id=seller_id,
+        starting_time=starting_time,
+        ending_time=ending_time,
+        starting_price=starting_price
+    )
+
+    # Call the CreateAuction RPC
+    response = stub.CreateAuction(request)
+
+    return response

@@ -5,7 +5,8 @@ import datetime
 from app.models.user import User
 from db import db, mongo
 import requests
-from app.grpc.user_client import get_user_bids_from_auction
+from app.grpc.user_client import get_user_bids_from_auction, create_auction
+from app.dao.mongoDAO import MongoDao
 
 user_bp = Blueprint("users", __name__)
 
@@ -146,14 +147,15 @@ def add_to_watchlist(user_id):
         category = data.get("category")  # User-defined category
 
         # Store watchlist in MongoDB
-        watchlist_item = {
-            "user_id": user_id,
-            "item_id": item_id,
-            "keyword": keyword,
-            "category": category
-        }
+        #watchlist_item = {
+        #    "user_id": user_id,
+        #    "item_id": item_id,
+        #    "keyword": keyword,
+        #    "category": category
+        #}
 
-        mongo.db.watchlist.insert_one(watchlist_item)
+        #mongo.db.watchlist.insert_one(watchlist_item)
+        MongoDao.add_to_watchlist(user_id, item_id, keyword, category)
         return jsonify({"message": "Item added to watchlist"}), 200
 
     except jwt.ExpiredSignatureError:
@@ -173,34 +175,36 @@ def get_watchlist(user_id):
         user_id = decoded.get("user_id")
 
         # Retrieve watchlist from MongoDB
-        watchlist_items_cursor = mongo.db.watchlist.find({"userId": user_id})
-        watchlist_items = list(watchlist_items_cursor)  # Convert cursor to a list
+        #watchlist_items_cursor = mongo.db.watchlist.find({"userId": user_id})
+        #watchlist_items = list(watchlist_items_cursor)  # Convert cursor to a list
+
+        watchlist_items = MongoDao.get_watchlist(user_id)
 
         # Bulk fetch item details
-        item_ids = [watchlist_item['itemId'] for watchlist_item in watchlist_items]
-        items_in_bulk = mongo.db.items.find({"_id": {"$in": item_ids}})
+        #item_ids = [watchlist_item['itemId'] for watchlist_item in watchlist_items]
+        #items_in_bulk = mongo.db.items.find({"_id": {"$in": item_ids}})
 
         # Create a dictionary to quickly lookup items by ID
-        item_dict = {str(item['_id']): item for item in items_in_bulk}
+        #item_dict = {str(item['_id']): item for item in items_in_bulk}
 
         items = []
         for watchlist_item in watchlist_items:
-            item = item_dict.get(str(watchlist_item['itemId']))
-            if item:
-                items.append({
-                    "item_id": item['_id'],
-                    "item_name": item['name'],
-                    "keyword": watchlist_item.get('keyword', ''),  # Use .get() to handle missing fields
-                    "category": watchlist_item.get('category', '')
+            #item = item_dict.get(str(watchlist_item['itemId']))
+            #if item:
+            items.append({
+                "item_id": watchlist_item.get('item_id'),
+                #"item_name": item['name'],
+                "keyword": watchlist_item.get('keyword', ''),  # Use .get() to handle missing fields
+                "category": watchlist_item.get('category', '')
                 })
-            else:
+            #else:
                 # If item not found in item service, add a placeholder or skip
-                items.append({
-                    "item_id": watchlist_item['itemId'],
-                    "item_name": "Item not found",
-                    "keyword": watchlist_item.get('keyword', ''),
-                    "category": watchlist_item.get('category', '')
-                })
+                #items.append({
+                    #"item_id": watchlist_item['itemId'],
+                    #"item_name": "Item not found",
+                    #"keyword": watchlist_item.get('keyword', ''),
+                    #"category": watchlist_item.get('category', '')
+                #})
 
         return jsonify({"watchlist": items}), 200
     except jwt.ExpiredSignatureError:
@@ -228,8 +232,10 @@ def remove_from_watchlist(user_id):
         item_id = data.get("item_id")
 
         # Remove item from the user's watchlist in MongoDB
-        result = mongo.db.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
-        if result.deleted_count == 0:
+        #result = mongo.db.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
+        removed = MongoDao.remove_from_watchlist(user_id, item_id)
+        #if result.deleted_count == 0:
+        if not removed:
             return jsonify({"message": "Item not found in watchlist"}), 404
 
         return jsonify({"message": "Item removed from watchlist"}), 200
@@ -269,26 +275,29 @@ def add_to_cart(user_id):
         item_data = item_response.json()
 
         # Check if the item already exists in the cart
-        cart_item = mongo.db.cart.find_one({"user_id": user_id, "item_id": item_id})
+        #cart_item = mongo.db.cart.find_one({"user_id": user_id, "item_id": item_id})
+        cart_item = MongoDao.get_cart_item(user_id, item_id)
         if cart_item:
             # Increment quantity if the item already exists
-            mongo.db.cart.update_one(
-                {"user_id": user_id, "item_id": item_id},
-                {"$inc": {"quantity": quantity}}
-            )
+            #mongo.db.cart.update_one(
+            #    {"user_id": user_id, "item_id": item_id},
+            #    {"$inc": {"quantity": quantity}}
+            #)
+            MongoDao.update_cart_item_quantity(user_id, item_id, quantity)
         else:
             # Insert the item into the cart with full details
-            mongo.db.cart.insert_one({
-                "user_id": user_id,
-                "item_id": item_id,
-                "shipping_cost": item_data.get('shipping_cost'),  
-                "description": item_data.get('description'),
-                "flagged": item_data.get('flagged'),
-                "category": item_data.get('category'),
-                "keywords": item_data.get('keywords'),
-                "starting_price": item_data.get('starting_price'),
-                "quantity": quantity  # Use the quantity from the request
-            })
+            #mongo.db.cart.insert_one({
+            #    "user_id": user_id,
+            #    "item_id": item_id,
+            #    "shipping_cost": item_data.get('shipping_cost'),  
+            #    "description": item_data.get('description'),
+            #    "flagged": item_data.get('flagged'),
+            #    "category": item_data.get('category'),
+            #    "keywords": item_data.get('keywords'),
+            #    "starting_price": item_data.get('starting_price'),
+            #    "quantity": quantity  # Use the quantity from the request
+            #})
+            MongoDao.add_to_cart(user_id, item_id, item_data, quantity)
 
         return jsonify({"message": "Item added to cart"}), 200
 
@@ -307,7 +316,8 @@ def get_cart(user_id):
     try:
         decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
         user_id = decoded.get("user_id")
-        cart_items = list(mongo.db.cart.find({"user_id": user_id}))
+        #cart_items = list(mongo.db.cart.find({"user_id": user_id}))
+        cart_items = MongoDao.get_cart(user_id)
 
         return jsonify({"cart": cart_items}), 200
     except jwt.ExpiredSignatureError:
@@ -327,8 +337,10 @@ def remove_from_cart(user_id):
         data = request.get_json()
         item_id = data.get("item_id")
 
-        result = mongo.db.cart.delete_one({"user_id": user_id, "item_id": item_id})
-        if result.deleted_count == 0:
+        #result = mongo.db.cart.delete_one({"user_id": user_id, "item_id": item_id})
+        removed = MongoDao.remove_from_cart(user_id, item_id)
+        #if result.deleted_count == 0:
+        if not removed:
             return jsonify({"message": "Item not found in cart"}), 404
 
         return jsonify({"message": "Item removed from cart"}), 200
@@ -351,7 +363,8 @@ def checkout_cart(user_id):
         user_id = decoded.get("user_id")
 
         # Retrieve user's cart items from MongoDB
-        cart_items = mongo.db.cart.find({"user_id": user_id})
+        #cart_items = mongo.db.cart.find({"user_id": user_id})
+        cart_items = MongoDao.get_cart(user_id)
         
         if not cart_items:
             return jsonify({"message": "Cart is empty"}), 400
@@ -405,7 +418,8 @@ def process_checkout(user_id):
         user_id = decoded.get("user_id")
 
         # Fetch user's cart from MongoDB
-        cart_items = mongo.db.cart.find({"user_id": user_id})
+        #cart_items = mongo.db.cart.find({"user_id": user_id})
+        cart_items = MongoDao.get_cart(user_id)
 
         if not cart_items:
             return jsonify({"message": "Cart is empty"}), 400
@@ -438,19 +452,24 @@ def process_checkout(user_id):
             })
 
         # Proceed with order creation (could be stored in a separate collection or service)
-        order = {
-            "user_id": user_id,
-            "total_amount": total_amount,
-            "items": order_items,
-            "status": "processing",
-            "created_at": datetime.datetime.utcnow()
-        }
+        #order = {
+            #"user_id": user_id,
+            #"total_amount": total_amount,
+            #"items": order_items,
+            #"status": "processing",
+            #"created_at": datetime.datetime.utcnow()
+        #}
+        status = "processing"
+        items = order_items
+        created_at = datetime.datetime.utcnow()
         
         # Store order in the database
-        mongo.db.orders.insert_one(order)
+        #mongo.db.orders.insert_one(order)
+        MongoDao.add_to_orders(user_id, total_amount, items, status, created_at)
 
         # Clear the cart after checkout
-        mongo.db.cart.delete_many({"user_id": user_id})
+        MongoDao.remove_all_cart(user_id)
+        #mongo.db.cart.delete_many({"user_id": user_id})
 
         return jsonify({"message": "Checkout successful", "order_id": str(order["_id"])}), 200
 
@@ -501,6 +520,41 @@ def get_user_bids(user_id):
     except Exception as e:
         return jsonify({"message": "Error fetching bids: " + str(e)}), 500
 
+@user_bp.route("/auction/create/<user_id>", methods=["POST"])
+def create_auction_route(user_id):
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    # Extract user ID from token
+    try:
+        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        user_id = decoded.get("user_id")
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+    except Exception:
+        return jsonify({"message": "Invalid token"}), 401
+
+    # Extract auction data from the request
+    data = request.get_json()
+    item_id = data.get('item_id')
+    seller_id = user_id
+    starting_time = data.get('starting_time')
+    ending_time = data.get('ending_time')
+    starting_price = data.get('starting_price')
+
+    # Use gRPC to create the auction
+    response = create_auction(item_id, seller_id, starting_time, ending_time, starting_price)
+
+    if response:
+        return jsonify({
+            "message": response.message,
+            "auction_id": response.auction_id
+        }), 201
+    else:
+        return jsonify({"message": "Failed to create auction"}), 500
+
+
 def get_item_details(item_id):
     """Fetch item details from Item Microservice."""
     item_service_url = f"http://localhost:8081/api/items/{item_id}"  
@@ -508,3 +562,4 @@ def get_item_details(item_id):
     if response.status_code == 200:
         return response.json()
     return None
+
