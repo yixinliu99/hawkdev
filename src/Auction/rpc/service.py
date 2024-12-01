@@ -1,8 +1,6 @@
 import datetime
-import os
 from concurrent import futures
-
-import celery
+import json
 import grpc
 from bson import ObjectId
 from google.protobuf.json_format import (MessageToDict, )
@@ -18,9 +16,7 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
         self.dao = dao
 
     def CreateAuction(self, request, context):
-        auction = Auction(starting_price=request.starting_price, starting_time=request.starting_time,
-                          ending_time=request.ending_time, item_id=request.item_id, seller_id=request.seller_id,
-                          current_price=request.starting_price, bids=[])
+        auction = Auction.from_dict(MessageToDict(request, preserving_proto_field_name=True))
         # create auction
         try:
             auction_id = auction.create(self.dao)[0]
@@ -31,7 +27,7 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
 
         # schedule auction to start at starting_time
         try:
-            start_auction_task.apply_async(args=[auction_id], countdown=(auction.starting_time - datetime.datetime.now()).total_seconds())
+            start_auction_task.apply_async(args=[auction_id], countdown=(auction.starting_time - datetime.datetime.now(tz=datetime.timezone.utc)).total_seconds())
 
             return service_pb2.CreateAuctionResponse(success=True, auction_id=auction_id, message="")
         except Exception as e:
@@ -107,14 +103,19 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
         except Exception as e:
             return service_pb2.PlaceBidResponse(success=False, message=str(e))
 
-    def GetAuction(self, request, context):
+    def GetAuctions(self, request, context):
         try:
-            query = request.query
+            query = json.loads(request.query)
             auctions = Auction.filter(query, self.dao)
-            auctions_dict = [auction.to_dict() for auction in auctions]
-            return service_pb2.GetAuctionResponse(auctions=auctions_dict)
+            res = []
+            for auction in auctions:
+                auction = auction.to_dict()
+                auction["_id"] = str(auction["_id"])
+                res.append(auction)
+
+            return service_pb2.GetAuctionResponse(success=True, auctions=res)
         except Exception as e:
-            return service_pb2.GetAuctionResponse(auctions=[], message=str(e))
+            return service_pb2.GetAuctionResponse(success=False, auctions=[], message=str(e))
 
 
 def start_server():

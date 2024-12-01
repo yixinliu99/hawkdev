@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+import datetime
+from datetime import timedelta
 import time
 import uuid
 import pytest
@@ -49,11 +50,11 @@ def test_create_auction_success(grpc_stub, mock_dao, mock_celery):
     mock_dao.write_to_db.return_value = ["wakemeupwhenseptemberends"]
 
     request = service_pb2.CreateAuctionRequest(
-        starting_price="100.00",
-        starting_time=(datetime.now() + timedelta(seconds=10)).isoformat(),
-        ending_time=(datetime.now() + timedelta(seconds=20)).isoformat(),
-        item_id=1,
-        seller_id=2,
+        starting_price=100.00,
+        starting_time=(datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
+        ending_time=(datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
+        item_id="1",
+        seller_id="asd",
     )
 
     response = grpc_stub.CreateAuction(request)
@@ -65,11 +66,11 @@ def test_create_auction_failure(grpc_stub, mock_dao):
     mock_dao.write_to_db.side_effect = Exception()
 
     request = service_pb2.CreateAuctionRequest(
-        starting_price="100.00",
-        starting_time=(datetime.now() + timedelta(seconds=10)).isoformat(),
-        ending_time=(datetime.now() + timedelta(seconds=20)).isoformat(),
-        item_id=1,
-        seller_id=2,
+        starting_price=100.00,
+        starting_time=(datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
+        ending_time=(datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
+        item_id="1",
+        seller_id="asd",
     )
 
     response = grpc_stub.CreateAuction(request)
@@ -83,9 +84,8 @@ def test_update_auction_success(grpc_stub, mock_dao):
         "starting_price": 100.00,
         "starting_time": "2024-11-25T10:30:00",
         "ending_time": "2024-11-25T12:30:00",
-        "seller_id": 2,
-        "item_id": 1,
-        "active": False,
+        "seller_id": "2",
+        "item_id": "1",
         "current_price": 100.00,
         "bids": []
     }]
@@ -93,11 +93,11 @@ def test_update_auction_success(grpc_stub, mock_dao):
 
     request = service_pb2.UpdateAuctionRequest(
         auction_id=fake_id,
-        starting_price="120.00",
+        starting_price=120.00,
         starting_time="2024-11-25T10:30:00",
         ending_time="2024-11-25T12:30:00",
-        seller_id=2,
-        item_id=1,
+        seller_id="2",
+        item_id="1"
     )
 
     response = grpc_stub.UpdateAuction(request)
@@ -109,8 +109,8 @@ def test_start_auction_success(grpc_stub, mock_dao):
     mock_dao.read_from_db.return_value = [{
         "_id": fake_id,
         "starting_price": 100.00,
-        "starting_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
-        "ending_time": (datetime.now() + timedelta(seconds=20)).isoformat(),
+        "starting_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
         "seller_id": 2,
         "item_id": 1,
         "active": False,
@@ -130,8 +130,8 @@ def test_stop_auction_success(grpc_stub, mock_dao):
     mock_dao.read_from_db.return_value = [{
         "_id": fake_id,
         "starting_price": 100.00,
-        "starting_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
-        "ending_time": (datetime.now() + timedelta(seconds=20)).isoformat(),
+        "starting_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
         "seller_id": 2,
         "item_id": 1,
         "active": True,
@@ -150,8 +150,8 @@ def test_place_bid_success(grpc_stub, mock_dao):
     mock_dao.read_from_db.return_value = [{
         "_id": fake_id,
         "starting_price": 100.00,
-        "starting_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
-        "ending_time": (datetime.now() + timedelta(seconds=20)).isoformat(),
+        "starting_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
         "seller_id": 2,
         "item_id": 1,
         "active": True,
@@ -162,7 +162,7 @@ def test_place_bid_success(grpc_stub, mock_dao):
 
     request = service_pb2.PlaceBidRequest(
         auction_id=fake_id,
-        user_id=1,
+        user_id="1",
         bid_amount=120.00
     )
 
@@ -177,8 +177,8 @@ def test_write_to_real_db():
         "item_id": 1,
         "seller_id": fake_id,
         "active": False,
-        "starting_time": datetime.now().isoformat(),
-        "ending_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
+        "starting_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
+        "ending_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
         "starting_price": 100.00,
         "current_price": 100.00,
         "bids": []
@@ -187,54 +187,3 @@ def test_write_to_real_db():
     auction.create(dao)
 
     assert len(Auction.filter({"seller_id": fake_id}, dao)) == 1
-
-
-# def test_celery_write_to_real_db():
-#     dao = MongoDao()
-#     fake_id = str(ObjectId())
-#     auction = {
-#         "item_id": 1,
-#         "seller_id": fake_id,
-#         "active": False,
-#         "starting_time": datetime.now().isoformat(),
-#         "ending_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
-#         "starting_price": 100.00,
-#         "current_price": 100.00,
-#         "bids": []
-#     }
-#     create_auction_task.apply_async(args=[auction], countdown=2)
-#     time.sleep(5)
-#
-#     assert len(Auction.filter({"seller_id": fake_id}, dao)) == 1
-#
-#
-# def test_celery_start_auction():
-#     dao = MongoDao()
-#     fake_id = str(ObjectId())
-#     auction = {
-#         "item_id": 1,
-#         "seller_id": fake_id,
-#         "active": False,
-#         "starting_time": datetime.now().isoformat(),
-#         "ending_time": (datetime.now() + timedelta(seconds=10)).isoformat(),
-#         "starting_price": 100.00,
-#         "current_price": 100.00,
-#         "bids": []
-#     }
-#     create_auction_task.apply_async(args=[auction], countdown=1)
-#     time.sleep(2.5)
-#
-#     assert len(Auction.filter({"seller_id": fake_id}, dao)) == 1
-#
-#     # get auction _id
-#     auction = Auction.filter({"seller_id": fake_id}, dao)[0]
-#     auction_id = str(auction.id)
-#
-#     # auction.start_auction(dao)
-#     #
-#     # assert Auction.filter({"_id": ObjectId(auction_id)}, dao)[0].active
-#
-#     start_auction_task.apply_async(args=[auction_id], countdown=2)
-#     time.sleep(4)
-#
-#     assert Auction.filter({"_id": ObjectId(auction_id)}, dao)[0].active

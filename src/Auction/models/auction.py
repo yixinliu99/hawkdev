@@ -1,15 +1,16 @@
 import datetime
 
+from bson import ObjectId
+
 from Auction.consts.consts import AUCTIONS_COLLECTION
 from Auction.dao.mongoDAO import MongoDao
 from Auction.models.bid import Bid
-from Auction.models.models import Model
 
 
-class Auction(Model):
+class Auction:
     def __init__(self, item_id, seller_id, starting_time: str, ending_time: str, starting_price: float,
                  current_price: float, active: bool = False, bids: list[Bid] = None, auction_id=None):
-        super().__init__(auction_id)
+        self.id = auction_id
         self.item_id = item_id
         self.seller_id = seller_id
         self.active = active
@@ -20,18 +21,23 @@ class Auction(Model):
         self.bids = bids
 
     def to_dict(self):
-        return {"item_id": self.item_id, "seller_id": self.seller_id, "active": self.active,
+        return {"_id": str(self.id), "item_id": self.item_id, "seller_id": self.seller_id, "active": self.active,
                 "starting_time": datetime.datetime.isoformat(self.starting_time),
                 "ending_time": datetime.datetime.isoformat(self.ending_time), "starting_price": self.starting_price,
-                "current_price": self.current_price, "bids": self.bids, "_id": self.id}
+                "current_price": self.current_price, "bids": self.bids}
 
     @staticmethod
     def from_dict(auction_dict: dict):
-        auction = Auction(item_id=auction_dict["item_id"], seller_id=auction_dict["seller_id"],
-                       active=auction_dict["active"], starting_time=auction_dict["starting_time"],
-                       ending_time=auction_dict["ending_time"], starting_price=auction_dict["starting_price"],
-                       current_price=auction_dict["current_price"], bids=auction_dict["bids"])
-        auction.id = auction_dict["_id"] if "_id" in auction_dict else None
+        auction = Auction(item_id=auction_dict["item_id"],
+                          seller_id=auction_dict["seller_id"],
+                          active=auction_dict["active"] if "active" in auction_dict else False,
+                          starting_time=auction_dict["starting_time"],
+                          ending_time=auction_dict["ending_time"],
+                          starting_price=float(auction_dict["starting_price"]),
+                          current_price=float(auction_dict["current_price"]) if "current_price" in auction_dict else
+                          auction_dict["starting_price"],
+                          bids=auction_dict["bids"] if "bids" in auction_dict else [],
+                          auction_id=auction_dict["_id"] if "_id" in auction_dict else None)
 
         return auction
 
@@ -47,6 +53,8 @@ class Auction(Model):
 
     @staticmethod
     def filter(query: dict, dao: MongoDao) -> list:
+        if "_id" in query and not isinstance(query["_id"], ObjectId):
+            query["_id"] = ObjectId(query["_id"])
         res = dao.read_from_db(AUCTIONS_COLLECTION, query)
         return [Auction.from_dict(auction) for auction in res]
 
@@ -70,10 +78,11 @@ class Auction(Model):
         return dao.update_db(AUCTIONS_COLLECTION, query, update)
 
     def place_bid(self, user_id: str, bid_amount: float, dao: MongoDao):
-        bid = Bid(auction_id=self.id, user_id=user_id, bid_amount=bid_amount)
-        if bid.bid_amount > self.current_price: #todo race condition
+        bid = Bid(user_id=user_id, bid_amount=bid_amount,
+                  bid_time=datetime.datetime.isoformat(datetime.datetime.now(tz=datetime.timezone.utc)))
+        if bid.bid_amount > self.current_price:  # todo race condition
             self.current_price = bid.bid_amount
-            self.bids.append(bid)
+            self.bids.append(bid.to_dict())
             self.update(dao)
         else:
             raise Exception("Bid amount must be greater than current price")
