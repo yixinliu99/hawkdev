@@ -1,9 +1,9 @@
+import os
 from typing import Any, Callable
 
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
-import Auction.consts.apiKeys as apiKeys  # Should not be committed to the repo
 import Auction.consts.consts as consts
 
 def ensure_connection(func: Callable) -> Callable:
@@ -14,8 +14,11 @@ def ensure_connection(func: Callable) -> Callable:
 
 
 class MongoDao:
-    def __init__(self, db_name: str=consts.MONGO_TEST_DB, uri: str=apiKeys.MONGODB_URI):
-        self.uri = uri
+    def __init__(self, db_name: str=consts.MONGO_TEST_DB, uri: str=None):
+        if not uri:
+            self.uri = os.environ.get("MONGODB_URI", "mongodb://mongodb:27011")
+        else:
+            self.uri = uri
         self.db_name = db_name
         self.client = None
         self.db = None

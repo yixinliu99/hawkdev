@@ -25,7 +25,7 @@ def run():
             starting_price=100.00,
             starting_time=datetime.datetime.isoformat(
                 datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=20)),
-            ending_time="2024-12-01T12:00:00Z",
+            ending_time="2024-12-31T12:00:00Z",
             seller_id='zxcv',
             item_id='zxcva'
         )

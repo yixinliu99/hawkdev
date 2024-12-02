@@ -1,5 +1,12 @@
 services:
   rpc:
     build: .
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
     ports:
       - "50010:50051"
+
+  mongodb:
+    image: mongo
+    ports:
+      - 27011:27017
