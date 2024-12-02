@@ -7,6 +7,7 @@ from db import db, mongo
 import requests
 from app.grpc.user_client import get_user_bids_from_auction, create_auction
 from app.dao.mongoDAO import MongoDao
+from app.notification_service import send_notification
 
 user_bp = Blueprint("users", __name__)
 
@@ -554,6 +555,25 @@ def create_auction_route(user_id):
     else:
         return jsonify({"message": "Failed to create auction"}), 500
 
+@user_bp.route("/item_watchlist_match/<user_id>", methods=["POST"])
+def item_watchlist_match(user_id):
+    """
+    Example route that triggers when an item matches a user's watchlist criteria.
+    """
+    data = request.json
+    user_email = data.get("email")
+    item_description = data.get("item_description")
+
+    # Prepare data for the notification
+    notification_data = {
+        "user_email": user_email,
+        "item_description": item_description
+    }
+
+    # Send the notification to RabbitMQ
+    send_notification("item_watchlist_match", notification_data)
+
+    return jsonify({"message": "Notification sent!"}), 200
 
 def get_item_details(item_id):
     """Fetch item details from Item Microservice."""

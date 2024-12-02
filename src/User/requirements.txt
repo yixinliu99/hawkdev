@@ -5,3 +5,4 @@ Werkzeug==2.2.2
 Flask-CORS==5.0.0
 PyMySQL==1.0.3
 Flask-PyMongo==2.3.0
+pika
