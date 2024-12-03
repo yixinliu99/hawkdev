@@ -135,8 +135,8 @@ def add_to_watchlist(user_id, item_id):
         return jsonify({"message": "Missing token"}), 401
 
     try:
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
         
         # Fetch user from MySQL
         user = User.query.get(user_id)
@@ -173,8 +173,8 @@ def get_watchlist(user_id):
         return jsonify({"message": "Missing token"}), 401
 
     try:
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
 
         # Retrieve watchlist from MongoDB
         #watchlist_items_cursor = mongo.db.watchlist.find({"userId": user_id})
@@ -222,8 +222,8 @@ def remove_from_watchlist(user_id, item_id):
         return jsonify({"message": "Missing token"}), 401
 
     try:
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
 
         # Fetch user from MySQL
         user = User.query.get(user_id)
@@ -256,8 +256,8 @@ def add_to_cart(user_id, item_id):
 
     try:
         # Decode the token to get user ID
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
 
         # Extract item ID and quantity from the request
         data = request.get_json()
@@ -335,8 +335,8 @@ def remove_from_cart(user_id, item_id):
         return jsonify({"message": "Missing token"}), 401
 
     try:
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
         data = request.get_json()
         item_id = data.get("item_id")
 
@@ -362,8 +362,8 @@ def checkout_cart(user_id):
 
     try:
         # Decode the token to get user ID
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
 
         # Retrieve user's cart items from MongoDB
         #cart_items = mongo.db.cart.find({"user_id": user_id})
@@ -417,8 +417,8 @@ def process_checkout(user_id):
 
     try:
         # Decode the token to get the user ID
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
 
         # Fetch user's cart from MongoDB
         #cart_items = mongo.db.cart.find({"user_id": user_id})
@@ -490,8 +490,8 @@ def get_user_bids(user_id):
 
     try:
         # Decode the token to get user ID
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
 
         # Call the Auction Microservice to get auctions the user has bid on
         auctions = get_user_bids_from_auction(user_id)
