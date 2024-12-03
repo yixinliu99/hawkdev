@@ -27,6 +27,7 @@ class MongoDao:
 
     def remove_from_watchlist(self, user_id, item_id):
         result = self.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
+        
         return result.deleted_count > 0  
 
     def add_to_cart(self, user_id, item_id, item_data, quantity):
@@ -57,8 +58,37 @@ class MongoDao:
             {"$inc": {"quantity": quantity}}
         )
     def remove_from_cart(self, user_id, item_id):
-        result = self.cart.delete_one({"user_id": user_id, "item_id": item_id})
-        return result.deleted_count > 0  
+        document = self.cart.find_one({"user_id": user_id, "items.item_id": item_id})
+
+        if not document:
+            print(f"No document found for user_id: {user_id} with item_id: {item_id}")
+            return False
+
+        # Find the item in the items array
+        item = next((i for i in document['items'] if i['item_id'] == item_id), None)
+
+        if not item:
+            print(f"No item found with item_id: {item_id}")
+            return False
+
+        if item['quantity'] > 1:
+            # Decrement the quantity
+            result = self.cart.update_one(
+                {"user_id": user_id, "items.item_id": item_id},
+                {"$inc": {"items.$.quantity": -1}}
+            )
+            print("Decremented quantity by 1")
+        else:
+            # Remove the item from the array
+            result = self.cart.update_one(
+                {"user_id": user_id},
+                {"$pull": {"items": {"item_id": item_id}}}
+            )
+            print("Removed item from cart")
+
+        print("Matched count:", result.matched_count)
+        print("Modified count:", result.modified_count)
+        return result.modified_count > 0  
     
     def remove_all_cart(self, user_id):
         return self.cart.delete_many({"user_id": user_id})

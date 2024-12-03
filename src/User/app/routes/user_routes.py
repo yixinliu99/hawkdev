@@ -250,9 +250,9 @@ def remove_from_watchlist(user_id, item_id):
 
 @user_bp.route("/cart/<user_id>", methods=["POST"])
 def add_to_cart(user_id, item_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
 
     try:
         # Decode the token to get user ID
@@ -311,9 +311,9 @@ def add_to_cart(user_id, item_id):
 
 @user_bp.route("/cart/<user_id>", methods=["GET"])
 def get_cart(user_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
 
     try:
         #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
@@ -329,19 +329,21 @@ def get_cart(user_id):
         return jsonify({"message": "Error fetching cart: " + str(e)}), 500
 
 @user_bp.route("/cart/<user_id>", methods=["DELETE"])
-def remove_from_cart(user_id, item_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
+def remove_from_cart(user_id):
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
 
     try:
         #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
         #user_id = decoded.get("user_id")
+        
         data = request.get_json()
         item_id = data.get("item_id")
 
         #result = mongo.db.cart.delete_one({"user_id": user_id, "item_id": item_id})
         removed = mongo_dao.remove_from_cart(user_id, item_id)
+        print(removed)
         #if result.deleted_count == 0:
         if not removed:
             return jsonify({"message": "Item not found in cart"}), 404
