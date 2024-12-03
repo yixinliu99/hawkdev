@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, render_template
 import grpc
-import grpc.admin_service_pb2 as admin_service_pb2
-import grpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+import admin_rpc.admin_service_pb2 as admin_service_pb2
+import admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+from google.protobuf.json_format import MessageToJson
+import json
 
 app = Flask(__name__)
 
@@ -69,7 +71,8 @@ def flagged_items():
     try:
         stub = get_grpc_stub()
         response = stub.ViewFlaggedItems(admin_service_pb2.Empty())
-        return jsonify({"flagged_items": response.flagged_items})
+        response = json.loads(MessageToJson(response))
+        return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -82,7 +85,9 @@ def active_auctions():
 
         stub = get_grpc_stub()
         response = stub.ViewActiveAuctions(admin_service_pb2.SortingRequest(sort_by=sort_by))
-        return jsonify({"active_auctions": response.active_auctions})
+        response = json.loads(MessageToJson(response))
+        # print(response)
+        return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

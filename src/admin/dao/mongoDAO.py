@@ -1,10 +1,10 @@
 import pymongo
 from datetime import datetime, timedelta
-from admin.consts.consts import *
+from consts.consts import *
 
 
 class MongoDAO:
-    def __init__(self, uri="mongodb://localhost:27017/", database="auction_db", client=None):
+    def __init__(self, uri=MONGO_LINK, database=MONGO_DATABASE, client=None):
         if client:
             # Only for tests
             self.client = client
@@ -23,6 +23,7 @@ class MongoDAO:
         return self.auctions.update_one({"_id": auction_id}, {"$set": {"status": "stopped"}})
 
     def get_active_auctions(self, sort_by):
+        print("Mongo get active auctions")
         return self.auctions.find({"status": "active"}).sort(sort_by, pymongo.ASCENDING)
 
     def get_closed_auctions_count(self, timeframe):

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
-from admin.grpc.admin_service import AdminService
-from admin.grpc.admin_service_pb2 import Response, FlaggedItemsResponse, ActiveAuctionsResponse, MetricsResponse
+from admin.admin_rpc.admin_service import AdminService
+from admin.admin_rpc.admin_service_pb2 import Response, FlaggedItemsResponse, ActiveAuctionsResponse, MetricsResponse
 
 
 @pytest.fixture

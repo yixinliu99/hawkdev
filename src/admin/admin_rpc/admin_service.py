@@ -1,14 +1,14 @@
 from concurrent import futures
 import grpc
 from dao.mongoDAO import MongoDAO
-from grpc.admin_service_pb2 import (
+from admin_rpc.admin_service_pb2 import (
     Response,
     FlaggedItemsResponse,
     ActiveAuctionsResponse,
     MetricsResponse,
 )
 from consts.consts import *
-import grpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+import admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
 
 
 class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
@@ -51,8 +51,10 @@ class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
         return FlaggedItemsResponse(flagged_items=flagged_list)
 
     def ViewActiveAuctions(self, request, context):
+        print("View active auctions")
         auctions = self.dao.get_active_auctions(request.sort_by)
         auction_list = [auction["_id"] for auction in auctions]
+        print(auction_list)
         return ActiveAuctionsResponse(active_auctions=auction_list)
 
     def ExamineMetrics(self, request, context):
