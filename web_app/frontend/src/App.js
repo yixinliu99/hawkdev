@@ -7,6 +7,7 @@ import Bidding from './components/Bidding';
 import Profile from './components/Profile';
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
+import SellItem from './components/SellItem';
 
 function App() {
   const token = localStorage.getItem('token'); // Check if a token exists
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/bidding/:user_id" element={<Bidding />} />
           <Route path="/cart/:user_id" element={<Cart />}/>
+          <Route path="/sell-item/:user_id" element={<SellItem />}/>
           {/* Add other routes as necessary */}
         </Routes>
       </div>
