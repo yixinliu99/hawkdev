@@ -10,6 +10,7 @@ from app.dao.mongoDAO import MongoDao
 from app.notification_service import send_notification
 
 user_bp = Blueprint("users", __name__)
+mongo_dao = MongoDao()
 
 # User sign-up endpoint
 @user_bp.route("/signup", methods=["POST"])
@@ -128,7 +129,7 @@ def update_profile(user_id):
         return jsonify({"message": "Invalid token"}), 401
 
 @user_bp.route("/watchlist/<user_id>", methods=["POST"])
-def add_to_watchlist(user_id):
+def add_to_watchlist(user_id, item_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -156,7 +157,7 @@ def add_to_watchlist(user_id):
         #}
 
         #mongo.db.watchlist.insert_one(watchlist_item)
-        MongoDao.add_to_watchlist(user_id, item_id, keyword, category)
+        mongo_dao.add_to_watchlist(user_id, item_id, keyword, category)
         return jsonify({"message": "Item added to watchlist"}), 200
 
     except jwt.ExpiredSignatureError:
@@ -179,7 +180,7 @@ def get_watchlist(user_id):
         #watchlist_items_cursor = mongo.db.watchlist.find({"userId": user_id})
         #watchlist_items = list(watchlist_items_cursor)  # Convert cursor to a list
 
-        watchlist_items = MongoDao.get_watchlist(user_id)
+        watchlist_items = mongo_dao.get_watchlist(user_id)
 
         # Bulk fetch item details
         #item_ids = [watchlist_item['itemId'] for watchlist_item in watchlist_items]
@@ -215,7 +216,7 @@ def get_watchlist(user_id):
 
 # Remove item from watchlist (MongoDB)
 @user_bp.route("/watchlist/<user_id>", methods=["DELETE"])
-def remove_from_watchlist(user_id):
+def remove_from_watchlist(user_id, item_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -234,7 +235,7 @@ def remove_from_watchlist(user_id):
 
         # Remove item from the user's watchlist in MongoDB
         #result = mongo.db.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
-        removed = MongoDao.remove_from_watchlist(user_id, item_id)
+        removed = mongo_dao.remove_from_watchlist(user_id, item_id)
         #if result.deleted_count == 0:
         if not removed:
             return jsonify({"message": "Item not found in watchlist"}), 404
@@ -248,7 +249,7 @@ def remove_from_watchlist(user_id):
 
 
 @user_bp.route("/cart/<user_id>", methods=["POST"])
-def add_to_cart(user_id):
+def add_to_cart(user_id, item_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -277,14 +278,14 @@ def add_to_cart(user_id):
 
         # Check if the item already exists in the cart
         #cart_item = mongo.db.cart.find_one({"user_id": user_id, "item_id": item_id})
-        cart_item = MongoDao.get_cart_item(user_id, item_id)
+        cart_item = mongo_dao.get_cart_item(user_id, item_id)
         if cart_item:
             # Increment quantity if the item already exists
             #mongo.db.cart.update_one(
             #    {"user_id": user_id, "item_id": item_id},
             #    {"$inc": {"quantity": quantity}}
             #)
-            MongoDao.update_cart_item_quantity(user_id, item_id, quantity)
+            mongo_dao.update_cart_item_quantity(user_id, item_id, quantity)
         else:
             # Insert the item into the cart with full details
             #mongo.db.cart.insert_one({
@@ -298,7 +299,7 @@ def add_to_cart(user_id):
             #    "starting_price": item_data.get('starting_price'),
             #    "quantity": quantity  # Use the quantity from the request
             #})
-            MongoDao.add_to_cart(user_id, item_id, item_data, quantity)
+            mongo_dao.add_to_cart(user_id, item_id, item_data, quantity)
 
         return jsonify({"message": "Item added to cart"}), 200
 
@@ -315,11 +316,12 @@ def get_cart(user_id):
         return jsonify({"message": "Missing token"}), 401
 
     try:
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
+        #print(user_id)
         #cart_items = list(mongo.db.cart.find({"user_id": user_id}))
-        cart_items = MongoDao.get_cart(user_id)
-
+        cart_items = mongo_dao.get_cart(user_id)
+        print(cart_items)
         return jsonify({"cart": cart_items}), 200
     except jwt.ExpiredSignatureError:
         return jsonify({"message": "Token has expired"}), 401
@@ -327,7 +329,7 @@ def get_cart(user_id):
         return jsonify({"message": "Error fetching cart: " + str(e)}), 500
 
 @user_bp.route("/cart/<user_id>", methods=["DELETE"])
-def remove_from_cart(user_id):
+def remove_from_cart(user_id, item_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"message": "Missing token"}), 401
@@ -339,7 +341,7 @@ def remove_from_cart(user_id):
         item_id = data.get("item_id")
 
         #result = mongo.db.cart.delete_one({"user_id": user_id, "item_id": item_id})
-        removed = MongoDao.remove_from_cart(user_id, item_id)
+        removed = mongo_dao.remove_from_cart(user_id, item_id)
         #if result.deleted_count == 0:
         if not removed:
             return jsonify({"message": "Item not found in cart"}), 404
@@ -365,7 +367,7 @@ def checkout_cart(user_id):
 
         # Retrieve user's cart items from MongoDB
         #cart_items = mongo.db.cart.find({"user_id": user_id})
-        cart_items = MongoDao.get_cart(user_id)
+        cart_items = mongo_dao.get_cart(user_id)
         
         if not cart_items:
             return jsonify({"message": "Cart is empty"}), 400
@@ -420,7 +422,7 @@ def process_checkout(user_id):
 
         # Fetch user's cart from MongoDB
         #cart_items = mongo.db.cart.find({"user_id": user_id})
-        cart_items = MongoDao.get_cart(user_id)
+        cart_items = mongo_dao.get_cart(user_id)
 
         if not cart_items:
             return jsonify({"message": "Cart is empty"}), 400
@@ -466,10 +468,10 @@ def process_checkout(user_id):
         
         # Store order in the database
         #mongo.db.orders.insert_one(order)
-        MongoDao.add_to_orders(user_id, total_amount, items, status, created_at)
+        mongo_dao.add_to_orders(user_id, total_amount, items, status, created_at)
 
         # Clear the cart after checkout
-        MongoDao.remove_all_cart(user_id)
+        mongo_dao.remove_all_cart(user_id)
         #mongo.db.cart.delete_many({"user_id": user_id})
 
         return jsonify({"message": "Checkout successful", "order_id": str(order["_id"])}), 200
