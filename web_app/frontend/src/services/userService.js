@@ -50,4 +50,27 @@ const removeFromCart = async (userId, itemId) => {
   return response.data;
 };
 
-export default { signup, login, logout, getProfile, updateProfile, getCart, removeFromCart };
+
+const getItems = async (userId) => {
+  const token = localStorage.getItem('authToken'); 
+  if (!token) {
+    throw new Error("User is not authenticated.");
+  }
+
+  const headers = { Authorization: `Bearer ${token}` }; 
+  const response = await axios.get(`${API_URL}/users/bids/${userId}`, { headers }); 
+  return response.data;
+};
+
+const createAuction = async (auctionData, sellerID) => {
+  const token = localStorage.getItem('authToken'); 
+  if (!token) {
+    throw new Error("User is not authenticated.");
+  }
+
+  const headers = { Authorization: `Bearer ${token}` }; 
+  const response = await axios.post(`${API_URL}/users/auctions/${sellerID}`, auctionData, { headers });
+  return response.data;
+};
+
+export default { signup, login, logout, getProfile, updateProfile, getCart, removeFromCart, getItems, createAuction };
