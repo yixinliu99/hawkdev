@@ -523,25 +523,25 @@ def get_user_bids(user_id):
     except Exception as e:
         return jsonify({"message": "Error fetching bids: " + str(e)}), 500
 
-@user_bp.route("/auction/create/<user_id>", methods=["POST"])
-def create_auction_route(user_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
+@user_bp.route("/auctions/<seller_id>", methods=["POST"])
+def create_auction_route(seller_id):
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
 
     # Extract user ID from token
-    try:
-        decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        user_id = decoded.get("user_id")
-    except jwt.ExpiredSignatureError:
-        return jsonify({"message": "Token has expired"}), 401
-    except Exception:
-        return jsonify({"message": "Invalid token"}), 401
+    #try:
+        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
+        #user_id = decoded.get("user_id")
+    #except jwt.ExpiredSignatureError:
+        #return jsonify({"message": "Token has expired"}), 401
+    #except Exception:
+        #return jsonify({"message": "Invalid token"}), 401
 
     # Extract auction data from the request
     data = request.get_json()
     item_id = data.get('item_id')
-    seller_id = user_id
+    #seller_id = user_id
     starting_time = data.get('starting_time')
     ending_time = data.get('ending_time')
     starting_price = data.get('starting_price')
