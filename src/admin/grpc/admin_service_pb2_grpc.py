@@ -3,26 +3,26 @@
 import grpc
 import warnings
 
-import admin.grpc.admin_service_pb2 as admin__service__pb2
+import grpc.admin_service_pb2 as admin__service__pb2
 
-GRPC_GENERATED_VERSION = '1.68.0'
-GRPC_VERSION = grpc.__version__
-_version_not_supported = False
+# GRPC_GENERATED_VERSION = '1.68.0'
+# GRPC_VERSION = '1.68.0'
+# _version_not_supported = False
 
-try:
-    from grpc._utilities import first_version_is_lower
-    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
-except ImportError:
-    _version_not_supported = True
+# try:
+#     from grpc._utilities import first_version_is_lower
+#     _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+# except ImportError:
+#     _version_not_supported = True
 
-if _version_not_supported:
-    raise RuntimeError(
-        f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in admin_service_pb2_grpc.py depends on'
-        + f' grpcio>={GRPC_GENERATED_VERSION}.'
-        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
-        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
-    )
+# if _version_not_supported:
+#     raise RuntimeError(
+#         f'The grpc package installed is at version {GRPC_VERSION},'
+#         + f' but the generated code in admin_service_pb2_grpc.py depends on'
+#         + f' grpcio>={GRPC_GENERATED_VERSION}.'
+#         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+#         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+#     )
 
 
 class AdminServiceStub(object):

@@ -1,14 +1,14 @@
 from concurrent import futures
 import grpc
-from admin.dao.mongoDAO import MongoDAO
-from admin.grpc.admin_service_pb2 import (
+from dao.mongoDAO import MongoDAO
+from grpc.admin_service_pb2 import (
     Response,
     FlaggedItemsResponse,
     ActiveAuctionsResponse,
     MetricsResponse,
 )
-from admin.consts.consts import *
-import admin.grpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+from consts.consts import *
+import grpc.admin_service_pb2_grpc as admin_service_pb2_grpc
 
 
 class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
