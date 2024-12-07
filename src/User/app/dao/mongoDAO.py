@@ -10,6 +10,7 @@ class MongoDao:
         self.orders = self.db['orders'] if 'orders' in self.db.list_collection_names() else self.db.create_collection('orders')
         self.watchlist = self.db['watchlist'] if 'watchlist' in self.db.list_collection_names() else self.db.create_collection('watchlist')
         self.cart = self.db['cart'] if 'cart' in self.db.list_collection_names() else self.db.create_collection('cart')
+        self.items = self.db['items'] if 'items' in self.db.list_collection_names() else self.db.create_collection('items')
 
     def add_to_watchlist(self, user_id, item_id, keyword, category):
         watchlist_item = {

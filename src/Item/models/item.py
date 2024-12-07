@@ -1,5 +1,5 @@
 from Item.consts.consts import ITEM_COLLECTION
-
+from src.dao.mongoDAO import MongoDao
 
 class Item:
     def __init__(self, user_id: str, starting_price: float, quantity: int, shipping_cost: float, description: str, flagged: bool = False,
@@ -13,7 +13,14 @@ class Item:
         self.flagged = flagged
         self.category = category
         self.keywords = keywords
+        self.mongo_dao = MongoDao()
 
+    def add_item(self, item_data):
+        self.mongo_dao.items.insert_one(item_data)
+
+    def get_items(self):
+        return list(self.mongo_dao.items.find())
+    
     def to_dict(self):
         return {"user_id": self.user_id, "starting_price": self.starting_price, "quantity": self.quantity,
             "shipping_cost": self.shipping_cost, "description": self.description, "flagged": self.flagged,
