@@ -32,6 +32,11 @@ def run():
         create_response = stub.CreateAuction(create_request)
         print(f"CreateAuction response: {create_response}")
 
+        # Update an auction, add a buy now price to enable the buy now feature
+        update_request = service_pb2.UpdateAuctionRequest(auction_id=create_response.auction_id, buy_now_price=500.00)
+        update_response = stub.UpdateAuction(update_request)
+        print(f"UpdateAuction response: {update_response}")
+
         # Start auction
         start_request = service_pb2.StartAuctionRequest(auction_id=create_response.auction_id)
         start_response = stub.StartAuction(start_request)
@@ -42,6 +47,12 @@ def run():
                                                         bid_amount=200.00)
         place_bid_response = stub.PlaceBid(place_bid_request)
         print(f"PlaceBid response: {place_bid_response}")
+
+        # Buy now
+        buy_now_request = service_pb2.BuyItemNowRequest(auction_id=create_response.auction_id, user_id='aaaz1')
+        buy_now_response = stub.BuyItemNow(buy_now_request)
+        print(f"BuyItemNow response: {buy_now_response}")
+
 
         # Stop auction
         stop_request = service_pb2.StopAuctionRequest(auction_id=create_response.auction_id)
