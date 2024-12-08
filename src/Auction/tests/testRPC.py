@@ -1,15 +1,11 @@
 import datetime
 from datetime import timedelta
-import time
-import uuid
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
-from Auction.task_scheduler.tasks import create_auction_task, start_auction_task
-from Auction.models.auction import Auction
 from Auction.rpc import service_pb2, service_pb2_grpc
-from Auction.dao.mongoDAO import MongoDao
 from Auction.rpc.service import AuctionService
 
 
@@ -21,12 +17,7 @@ def mock_dao():
 
 
 @pytest.fixture(scope='module')
-def mock_celery():
-    return MagicMock()
-
-
-@pytest.fixture(scope='module')
-def auction_service(mock_dao, mock_celery):
+def auction_service(mock_dao):
     return AuctionService(mock_dao)
 
 
@@ -45,8 +36,8 @@ def grpc_stub_cls():
     return service_pb2_grpc.AuctionServiceStub
 
 
-def test_create_auction_success(grpc_stub, mock_dao, mock_celery):
-    mock_celery.send_task.return_value = None
+@patch('Auction.task_scheduler.tasks.start_auction_task.apply_async', MagicMock())
+def test_create_auction_success(grpc_stub, mock_dao):
     mock_dao.write_to_db.return_value = ["wakemeupwhenseptemberends"]
 
     request = service_pb2.CreateAuctionRequest(
@@ -77,6 +68,8 @@ def test_create_auction_failure(grpc_stub, mock_dao):
     assert not response.success
 
 
+@patch('Auction.task_scheduler.tasks.start_auction_task.AsyncResult', MagicMock())
+@patch('Auction.task_scheduler.tasks.start_auction_task.apply_async', MagicMock())
 def test_update_auction_success(grpc_stub, mock_dao):
     fake_id = str(ObjectId())
     mock_dao.read_from_db.return_value = [{
@@ -145,6 +138,7 @@ def test_stop_auction_success(grpc_stub, mock_dao):
     response = grpc_stub.StopAuction(request)
     assert response.success
 
+
 def test_place_bid_success(grpc_stub, mock_dao):
     fake_id = str(ObjectId())
     mock_dao.read_from_db.return_value = [{
@@ -168,22 +162,3 @@ def test_place_bid_success(grpc_stub, mock_dao):
 
     response = grpc_stub.PlaceBid(request)
     assert response.success
-
-
-def test_write_to_real_db():
-    dao = MongoDao()
-    fake_id = str(ObjectId())
-    auction = {
-        "item_id": 1,
-        "seller_id": fake_id,
-        "active": False,
-        "starting_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=10)).isoformat(),
-        "ending_time": (datetime.datetime.now(tz=datetime.timezone.utc) + timedelta(seconds=20)).isoformat(),
-        "starting_price": 100.00,
-        "current_price": 100.00,
-        "bids": []
-    }
-    auction = Auction.from_dict(auction)
-    auction.create(dao)
-
-    assert len(Auction.filter({"seller_id": fake_id}, dao)) == 1

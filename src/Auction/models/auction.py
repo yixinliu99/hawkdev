@@ -5,11 +5,13 @@ from bson import ObjectId
 from Auction.consts.consts import AUCTIONS_COLLECTION
 from Auction.dao.mongoDAO import MongoDao
 from Auction.models.bid import Bid
+from Auction.service_connectors.user_connector import UserConnector
 
 
 class Auction:
     def __init__(self, item_id, seller_id, starting_time: str, ending_time: str, starting_price: float,
-                 current_price: float, active: bool = False, bids: list[Bid] = None, auction_id=None):
+                 current_price: float, buy_now_price: float = None, active: bool = False, bids: list[Bid] = None,
+                 auction_id=None):
         self.id = auction_id
         self.item_id = item_id
         self.seller_id = seller_id
@@ -18,13 +20,15 @@ class Auction:
         self.ending_time = datetime.datetime.fromisoformat(ending_time)
         self.starting_price = starting_price
         self.current_price = current_price
+        self.buy_now_price = buy_now_price
         self.bids = bids
 
     def to_dict(self):
         return {"_id": str(self.id), "item_id": self.item_id, "seller_id": self.seller_id, "active": self.active,
                 "starting_time": datetime.datetime.isoformat(self.starting_time),
                 "ending_time": datetime.datetime.isoformat(self.ending_time), "starting_price": self.starting_price,
-                "current_price": self.current_price, "bids": self.bids}
+                "current_price": self.current_price, "bids": self.bids,
+                "buy_now_price": self.buy_now_price if self.buy_now_price else None}
 
     @staticmethod
     def from_dict(auction_dict: dict):
@@ -37,6 +41,8 @@ class Auction:
                           current_price=float(auction_dict["current_price"]) if "current_price" in auction_dict else
                           auction_dict["starting_price"],
                           bids=auction_dict["bids"] if "bids" in auction_dict else [],
+                          buy_now_price=float(
+                              auction_dict["buy_now_price"]) if "buy_now_price" in auction_dict and auction_dict["buy_now_price"] else None,
                           auction_id=auction_dict["_id"] if "_id" in auction_dict else None)
 
         return auction
@@ -80,12 +86,24 @@ class Auction:
     def place_bid(self, user_id: str, bid_amount: float, dao: MongoDao):
         bid = Bid(user_id=user_id, bid_amount=bid_amount,
                   bid_time=datetime.datetime.isoformat(datetime.datetime.now(tz=datetime.timezone.utc)))
+        if not self.active:
+            raise Exception("Auction is not active")
+
         if bid.bid_amount > self.current_price:  # todo race condition
             self.current_price = bid.bid_amount
             self.bids.append(bid.to_dict())
             self.update(dao)
         else:
             raise Exception("Bid amount must be greater than current price")
+
+    def buy_item_now(self, user_id: str, dao: MongoDao):
+        user_connector = UserConnector()
+        try:
+            user_connector.add_item_to_shopping_cart(user_id, self.item_id)
+        except Exception as e:
+            raise Exception(f"Could not add item to shopping cart. Error: {str(e)}")
+
+        self.stop_auction(dao)
 
     def _validate_auction(self) -> (bool, str):
         if self.starting_time > self.ending_time:

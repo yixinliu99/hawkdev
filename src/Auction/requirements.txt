@@ -4,3 +4,4 @@ pymongo
 mongomock
 grpcio
 grpcio-tools
+requests

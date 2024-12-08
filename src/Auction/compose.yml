@@ -3,6 +3,7 @@ services:
     build: .
     environment:
       - MONGODB_URI=mongodb://mongodb:27017
+      - USER_SERVICE_ADDRESS=http://localhost:5001
     ports:
       - "50010:50051"
 
