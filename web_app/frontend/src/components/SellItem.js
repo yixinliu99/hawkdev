@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios'; // Import axios for making HTTP requests
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating unique IDs
 
 const SellItem = () => {
   const [description, setDescription] = useState('');
@@ -20,6 +21,7 @@ const SellItem = () => {
     }
 
     const itemData = {
+      _id: uuidv4(), // Generate a unique ID
       user_id: userID,
       starting_price: parseFloat(startingPrice),
       quantity: parseInt(quantity, 10),
@@ -32,7 +34,8 @@ const SellItem = () => {
 
     try {
       const response = await axios.post('http://localhost:8081/items', itemData);
-      setMessage(`Item created successfully! Item ID: ${response.data._id}`);
+      console.log('Response:', response);
+      setMessage(`Item created successfully! Item ID: ${response.data[0]}`);
       setDescription('');
       setStartingPrice('');
       setQuantity('');
