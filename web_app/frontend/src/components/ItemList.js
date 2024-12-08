@@ -1,38 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import itemService from '../services/itemService';
 
 const ItemList = () => {
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const data = await itemService.getItems();
-        setItems(data);
-      } catch (err) {
-        setError('Failed to fetch items');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchItems();
   }, []);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
+  const fetchItems = async () => {
+    try {
+      const response = await fetch('http://localhost:8081/items');
+      const data = await response.json();
+      setItems(data);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    }
+  };
 
   return (
     <div>
       <h2>Available Items</h2>
       <ul>
         {items.map(item => (
-          <li key={item._id}>
-            <h3>{item.description}</h3>
-            <p>Price: ${item.starting_price}</p>
-            <p>Category: {item.category}</p>
+          <li key={item.id}>
+            {item.description} - {item.category}
           </li>
         ))}
       </ul>

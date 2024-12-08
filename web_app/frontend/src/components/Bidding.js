@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import itemService from '../services/itemService'; 
 import { useNavigate, useParams } from 'react-router-dom';
-import Navbar from './Navbar'; 
 
 const Bidding = () => {
   const [items, setItems] = useState([]);
   const navigate = useNavigate();
-  const user_id = useParams();
+  const { user_id } = useParams();
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const response = await itemService.getItems(); 
-        setItems(response.data);
+        const response = await fetch('http://localhost:8081/items');
+        const data = await response.json(); 
+        console.log('Fetched items:', data); // Log the fetched data
+        setItems(data); // Set the items state with the fetched data
       } catch (error) {
         console.error('Failed to fetch items', error);
       }
@@ -23,17 +23,17 @@ const Bidding = () => {
 
   return (
     <div>
-      {/*<Navbar />  Include the Navbar here */}
       <h2>Items for Bidding</h2>
       <div>
         {items.length === 0 ? (
           <p>No items available for bidding</p>
         ) : (
           items.map((item) => (
-            <div key={item.id}>
-              <h3>{item.name}</h3>
-              <p>{item.description}</p>
-              <button onClick={() => navigate(`/bid/${item.id}`)}>Place Bid</button>
+            <div key={item._id}>
+              <h3>{item.description}</h3>
+              <p>{item.category}</p>
+              <p>${item.starting_price}</p>
+              <button onClick={() => navigate(`/bid/${item._id}`)}>Place Bid</button>
             </div>
           ))
         )}
