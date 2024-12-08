@@ -13,6 +13,11 @@ def get_grpc_stub():
     return admin_service_pb2_grpc.AdminServiceStub(channel)
 
 
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
 # API Route: Stop an auction early
 @app.route("/api/stop-auction", methods=["POST"])
 def stop_auction():
@@ -71,8 +76,17 @@ def flagged_items():
     try:
         stub = get_grpc_stub()
         response = stub.ViewFlaggedItems(admin_service_pb2.Empty())
-        response = json.loads(MessageToJson(response))
-        return jsonify(response)
+        items = [
+            {
+                "name": item.name,
+                "description": item.description,
+                "category": item.category,
+                "flag_reason": item.flag_reason,
+                "flagged_date": item.flagged_date,
+            }
+            for item in response.flagged_items
+        ]
+        return jsonify({"flagged_items": items})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -81,13 +95,23 @@ def flagged_items():
 @app.route("/api/active-auctions", methods=["GET"])
 def active_auctions():
     try:
-        sort_by = request.args.get("sort_by", "end_time")
+        sort_by = request.args.get("sort_field", "end_time")
 
         stub = get_grpc_stub()
         response = stub.ViewActiveAuctions(admin_service_pb2.SortingRequest(sort_by=sort_by))
-        response = json.loads(MessageToJson(response))
-        # print(response)
-        return jsonify(response)
+        auctions = [
+            {
+                "title": auction.title,
+                "description": auction.description,
+                "starting_price": auction.starting_price,
+                "current_price": auction.current_price,
+                "start_time": auction.start_time,
+                "end_time": auction.end_time,
+                "category": auction.category,
+            }
+            for auction in response.auctions
+        ]
+        return jsonify({"active_auctions": auctions})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -96,11 +120,29 @@ def active_auctions():
 @app.route("/api/metrics", methods=["GET"])
 def metrics():
     try:
-        timeframe = request.args.get("timeframe", "day")
+        # Get query parameters
+        days = int(request.args.get("days", 0))
+        weeks = int(request.args.get("weeks", 0))
+        months = int(request.args.get("months", 0))
 
+        # Pass the values to the gRPC stub
         stub = get_grpc_stub()
-        response = stub.ExamineMetrics(admin_service_pb2.MetricsRequest(timeframe=timeframe))
-        return jsonify({"metrics": dict(response.metrics)})
+        response = stub.ExamineMetrics(
+            admin_service_pb2.MetricsRequest(days=days, weeks=weeks, months=months)
+        )
+        auctions = [
+            {
+                "title": auction.title,
+                "description": auction.description,
+                "starting_price": auction.starting_price,
+                "current_price": auction.current_price,
+                "start_time": auction.start_time,
+                "end_time": auction.end_time,
+                "category": auction.category,
+            }
+            for auction in response.auctions
+        ]
+        return jsonify({"active_auctions": auctions})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -120,6 +162,27 @@ def respond_email():
         return jsonify({"message": response.message})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/unresponded-emails", methods=["GET"])
+def unresponded_emails():
+    try:
+        # Call gRPC service
+        stub = get_grpc_stub()
+        response = stub.ViewUnrespondedEmails(admin_service_pb2.Empty())
+
+        # Convert response to JSON format
+        emails = [
+            {
+                "email_id": email.email_id,
+                "user_email": email.user_email,
+                "message": email.message,
+            }
+            for email in response.emails
+        ]
+        return jsonify({"unresponded_emails": emails})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 # # Frontend Route: Admin Dashboard

@@ -22,14 +22,20 @@ class MongoDAO:
     def stop_auction_early(self, auction_id):
         return self.auctions.update_one({"_id": auction_id}, {"$set": {"status": "stopped"}})
 
-    def get_active_auctions(self, sort_by):
+    def get_active_auctions(self, sort_by='end_time'):
         print("Mongo get active auctions")
-        return self.auctions.find({"status": "active"}).sort(sort_by, pymongo.ASCENDING)
-
-    def get_closed_auctions_count(self, timeframe):
-        timeframes = {"day": 1, "week": 7, "month": 30}
-        start_date = datetime.utcnow() - timedelta(days=timeframes[timeframe])
-        return self.auctions.count_documents({"status": "closed", "end_time": {"$gte": start_date}})
+        return list(
+            self.db.auctions.find(
+                {"status": "active"},
+                {"_id": 0, "title": 1, "description": 1, "starting_price": 1, "current_price": 1, "start_time": 1, "end_time": 1, "category": 1}
+            ).sort(sort_by, 1)
+        )
+    
+    def get_closed_auctions(self, start_date):
+        return list(self.auctions.find(
+            {"status": "stopped", "end_time": {"$gte": start_date}},
+            {"_id": 0, "title": 1, "description": 1, "starting_price": 1, "current_price": 1, "start_time": 1, "end_time": 1, "category": 1}
+        ))
 
     # User Operations
     def block_user_and_remove_auctions(self, user_id):
@@ -49,7 +55,12 @@ class MongoDAO:
 
     # Flagged Items
     def get_flagged_items(self):
-        return self.items.find({"flagged": True})
+        return list(
+            self.db.items.find(
+                {"flagged": True},  # Query for flagged items
+                {"_id": 0, "name": 1, "description": 1, "category": 1, "flag_reason": 1, "flagged_date": 1}
+            )
+        )
 
     # Emails
     def respond_to_email(self, email_id, response_text):
@@ -57,6 +68,15 @@ class MongoDAO:
             {"_id": email_id},
             {"$set": {"response": response_text, "responded": True}},
         )
+    
+    def get_unresponded_emails(self):
+        return list(
+            self.emails.find(
+                {"responded": False},  # Fetch only unresponded emails
+                {"_id": 1, "user_email": 1, "message": 1}  # Include relevant fields
+            )
+        )
+
 
     def close(self):
         self.client.close()

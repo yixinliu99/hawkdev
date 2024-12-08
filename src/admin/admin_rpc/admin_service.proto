@@ -8,12 +8,27 @@ service AdminService {
   rpc AddModifyRemoveCategory (CategoryRequest) returns (Response);
   rpc ViewFlaggedItems (Empty) returns (FlaggedItemsResponse);
   rpc ViewActiveAuctions (SortingRequest) returns (ActiveAuctionsResponse);
-  rpc ExamineMetrics (MetricsRequest) returns (MetricsResponse);
+  rpc ExamineMetrics (MetricsRequest) returns (ActiveAuctionsResponse);
   rpc RespondToEmails (EmailRequest) returns (Response);
+  rpc ViewUnrespondedEmails (Empty) returns (UnrespondedEmailsResponse);
 }
 
 message AuctionRequest {
   string auction_id = 1;
+}
+
+message Auction {
+    string title = 1;
+    string description = 2;
+    double starting_price = 3;
+    double current_price = 4;
+    string start_time = 5;
+    string end_time = 6;
+    string category = 7;
+}
+
+message ActiveAuctionsResponse {
+    repeated Auction auctions = 1;
 }
 
 message UserRequest {
@@ -31,7 +46,13 @@ message SortingRequest {
 }
 
 message MetricsRequest {
-  string timeframe = 1; // "day", "week", "month"
+    int32 days = 1;
+    int32 weeks = 2;
+    int32 months = 3;
+}
+
+message MetricsResponse {
+    repeated string auctions_in_metrics = 1;
 }
 
 message EmailRequest {
@@ -39,16 +60,16 @@ message EmailRequest {
   string response_text = 2;
 }
 
+message FlaggedItem {
+    string name = 1;
+    string description = 2;
+    string category = 3;
+    string flag_reason = 4;
+    string flagged_date = 5;
+}
+
 message FlaggedItemsResponse {
-  repeated string flagged_items = 1;
-}
-
-message ActiveAuctionsResponse {
-  repeated string active_auctions = 1;
-}
-
-message MetricsResponse {
-  map<string, int32> metrics = 1; // Example: {"closed_auctions": 100}
+  repeated FlaggedItem flagged_items = 1;
 }
 
 message Response {
@@ -56,3 +77,13 @@ message Response {
 }
 
 message Empty {}
+
+message Email {
+    string email_id = 1;
+    string user_email = 2;
+    string message = 3;
+}
+
+message UnrespondedEmailsResponse {
+    repeated Email emails = 1;
+}

@@ -1,12 +1,20 @@
 from concurrent import futures
 import grpc
 from dao.mongoDAO import MongoDAO
+from datetime import datetime, timedelta
 from admin_rpc.admin_service_pb2 import (
     Response,
     FlaggedItemsResponse,
     ActiveAuctionsResponse,
-    MetricsResponse,
+    FlaggedItem,
+    Auction,
+    Email,
+    UnrespondedEmailsResponse
 )
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 from consts.consts import *
 import admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
 
@@ -27,7 +35,7 @@ class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
             return Response(
                 message=f"User blocked and {auction_count} auctions removed."
             )
-        return Response(message="User not found.")
+        return Response(message="User not found or already blocked.")
 
     def AddModifyRemoveCategory(self, request, context):
         if request.action == "add":
@@ -47,25 +55,142 @@ class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
 
     def ViewFlaggedItems(self, request, context):
         flagged_items = self.dao.get_flagged_items()
-        flagged_list = [item["_id"] for item in flagged_items]
-        return FlaggedItemsResponse(flagged_items=flagged_list)
+        items = [
+            FlaggedItem(
+                name=item["name"],
+                description=item.get("description", "No description available"),
+                category=item.get("category", "Uncategorized"),
+                flag_reason=item.get("flag_reason", "Unknown reason"),
+                flagged_date=item.get("flagged_date", "").isoformat() if "flagged_date" in item else "N/A"
+            )
+            for item in flagged_items
+        ]
+        print(items)
+        return FlaggedItemsResponse(flagged_items=items)
 
     def ViewActiveAuctions(self, request, context):
         print("View active auctions")
-        auctions = self.dao.get_active_auctions(request.sort_by)
-        auction_list = [auction["_id"] for auction in auctions]
-        print(auction_list)
-        return ActiveAuctionsResponse(active_auctions=auction_list)
+        active_auctions = self.dao.get_active_auctions(sort_by=request.sort_by)
+
+        # Convert MongoDB results to gRPC response
+        auctions = [
+            Auction(
+                title=auction["title"],
+                description=auction["description"],
+                starting_price=auction["starting_price"],
+                current_price=auction["current_price"],
+                start_time=auction["start_time"].isoformat(),  # Convert datetime to string
+                end_time=auction["end_time"].isoformat(),
+                category=auction["category"]
+            )
+            for auction in active_auctions
+        ]
+
+        return ActiveAuctionsResponse(auctions=auctions)
 
     def ExamineMetrics(self, request, context):
-        closed_auctions = self.dao.get_closed_auctions_count(request.timeframe)
-        return MetricsResponse(metrics={"closed_auctions": closed_auctions})
+        timeframe_days = request.days + (request.weeks * 7) + (request.months * 30)
+
+        # Query MongoDB for auctions closed in the calculated timeframe
+        start_date = datetime.utcnow() - timedelta(days=timeframe_days)
+
+        closed_auctions = self.dao.get_closed_auctions(start_date)
+        auctions = [
+            Auction(
+                title=auction["title"],
+                description=auction["description"],
+                starting_price=auction["starting_price"],
+                current_price=auction["current_price"],
+                start_time=auction["start_time"].isoformat(),  # Convert datetime to string
+                end_time=auction["end_time"].isoformat(),
+                category=auction["category"]
+            )
+            for auction in closed_auctions
+        ]
+        return ActiveAuctionsResponse(auctions=auctions)
+    
+    def send_email(self, to_email, subject, message_body):
+        # Email credentials
+        sender_email = ADMIN_ADDRESS  # Replace with your email
+        sender_password = EMAIL_APP_PASSWORD   # Replace with your email's app password
+
+        # Email configuration
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.attach(MIMEText(message_body, "plain"))
+
+        try:
+            # Connect to the Gmail SMTP server
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()  # Start TLS encryption
+                server.login(sender_email, sender_password)  # Login
+                server.send_message(message)  # Send email
+
+            print(f"Email sent successfully to {to_email}")
+            return True
+        except Exception as e:
+            print(f"Failed to send email: {str(e)}")
+            return False
+        
 
     def RespondToEmails(self, request, context):
-        result = self.dao.respond_to_email(request.email_id, request.response_text)
-        if result.modified_count:
-            return Response(message="Email response sent.")
-        return Response(message="Email not found.")
+        # Extract email ID and response text from the request
+        email_id = request.email_id
+        response_text = request.response_text
+
+        # Fetch the email record from MongoDB
+        email_record = self.dao.emails.find_one({"_id": email_id})
+
+        if not email_record:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details(f"Email with ID {email_id} not found")
+            return Response(message="Email not found")
+
+        user_email = email_record.get("user_email")
+        original_message = email_record.get("message")
+
+        # Construct the email content
+        email_subject = "Response to Your Query"
+        email_body = (
+            f"Dear User,\n\n"
+            f"Thank you for your query:\n\n"
+            f"\"{original_message}\"\n\n"
+            f"Our response:\n\n"
+            f"{response_text}\n\n"
+            f"Best regards,\nSupport Team"
+        )
+
+        # Send the email (using a helper function)
+        email_sent = self.send_email(user_email, email_subject, email_body)
+
+        if not email_sent:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Failed to send the email")
+            return Response(message="Failed to send email")
+
+        # Update MongoDB to mark the email as responded
+        self.dao.respond_to_email(email_id, response_text)
+
+        return Response(message="Response sent successfully")
+    
+    def ViewUnrespondedEmails(self, request, context):
+        # Fetch unresponded emails
+        unresponded_emails = self.dao.get_unresponded_emails()
+
+        # Convert MongoDB results to gRPC response
+        emails = [
+            Email(
+                email_id=str(email["_id"]),
+                user_email=email["user_email"],
+                message=email["message"]
+            )
+            for email in unresponded_emails
+        ]
+
+        return UnrespondedEmailsResponse(emails=emails)
+
 
 
 def serve():

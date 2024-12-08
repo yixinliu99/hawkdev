@@ -62,12 +62,17 @@ class AdminServiceStub(object):
         self.ExamineMetrics = channel.unary_unary(
                 '/admin.AdminService/ExamineMetrics',
                 request_serializer=admin__service__pb2.MetricsRequest.SerializeToString,
-                response_deserializer=admin__service__pb2.MetricsResponse.FromString,
+                response_deserializer=admin__service__pb2.ActiveAuctionsResponse.FromString,
                 _registered_method=True)
         self.RespondToEmails = channel.unary_unary(
                 '/admin.AdminService/RespondToEmails',
                 request_serializer=admin__service__pb2.EmailRequest.SerializeToString,
                 response_deserializer=admin__service__pb2.Response.FromString,
+                _registered_method=True)
+        self.ViewUnrespondedEmails = channel.unary_unary(
+                '/admin.AdminService/ViewUnrespondedEmails',
+                request_serializer=admin__service__pb2.Empty.SerializeToString,
+                response_deserializer=admin__service__pb2.UnrespondedEmailsResponse.FromString,
                 _registered_method=True)
 
 
@@ -116,6 +121,12 @@ class AdminServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ViewUnrespondedEmails(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AdminServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -147,15 +158,241 @@ def add_AdminServiceServicer_to_server(servicer, server):
             'ExamineMetrics': grpc.unary_unary_rpc_method_handler(
                     servicer.ExamineMetrics,
                     request_deserializer=admin__service__pb2.MetricsRequest.FromString,
-                    response_serializer=admin__service__pb2.MetricsResponse.SerializeToString,
+                    response_serializer=admin__service__pb2.ActiveAuctionsResponse.SerializeToString,
             ),
             'RespondToEmails': grpc.unary_unary_rpc_method_handler(
                     servicer.RespondToEmails,
                     request_deserializer=admin__service__pb2.EmailRequest.FromString,
                     response_serializer=admin__service__pb2.Response.SerializeToString,
             ),
+            'ViewUnrespondedEmails': grpc.unary_unary_rpc_method_handler(
+                    servicer.ViewUnrespondedEmails,
+                    request_deserializer=admin__service__pb2.Empty.FromString,
+                    response_serializer=admin__service__pb2.UnrespondedEmailsResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'admin.AdminService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
     server.add_registered_method_handlers('admin.AdminService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class AdminService(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def StopAuctionEarly(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/StopAuctionEarly',
+            admin__service__pb2.AuctionRequest.SerializeToString,
+            admin__service__pb2.Response.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RemoveAndBlockUser(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/RemoveAndBlockUser',
+            admin__service__pb2.UserRequest.SerializeToString,
+            admin__service__pb2.Response.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AddModifyRemoveCategory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/AddModifyRemoveCategory',
+            admin__service__pb2.CategoryRequest.SerializeToString,
+            admin__service__pb2.Response.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ViewFlaggedItems(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/ViewFlaggedItems',
+            admin__service__pb2.Empty.SerializeToString,
+            admin__service__pb2.FlaggedItemsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ViewActiveAuctions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/ViewActiveAuctions',
+            admin__service__pb2.SortingRequest.SerializeToString,
+            admin__service__pb2.ActiveAuctionsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExamineMetrics(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/ExamineMetrics',
+            admin__service__pb2.MetricsRequest.SerializeToString,
+            admin__service__pb2.ActiveAuctionsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RespondToEmails(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/RespondToEmails',
+            admin__service__pb2.EmailRequest.SerializeToString,
+            admin__service__pb2.Response.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ViewUnrespondedEmails(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/admin.AdminService/ViewUnrespondedEmails',
+            admin__service__pb2.Empty.SerializeToString,
+            admin__service__pb2.UnrespondedEmailsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
