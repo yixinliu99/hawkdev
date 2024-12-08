@@ -8,10 +8,11 @@ import requests
 from app.grpc.user_client import get_user_bids_from_auction, create_auction
 from app.dao.mongoDAO import MongoDao
 from app.notification_service import send_notification
+# from app.models.item import Item
 
 user_bp = Blueprint("users", __name__)
 mongo_dao = MongoDao()
-
+# item_service = Item()
 # User sign-up endpoint
 @user_bp.route("/signup", methods=["POST"])
 def signup():

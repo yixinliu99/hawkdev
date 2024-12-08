@@ -1,6 +1,5 @@
 from Item.consts.consts import ITEM_COLLECTION
 
-
 class Item:
     def __init__(self, user_id: str, starting_price: float, quantity: int, shipping_cost: float, description: str, flagged: bool = False,
                  category: str = None, keywords: list[str] = None, item_id=None):
@@ -14,6 +13,7 @@ class Item:
         self.category = category
         self.keywords = keywords
 
+    
     def to_dict(self):
         return {"user_id": self.user_id, "starting_price": self.starting_price, "quantity": self.quantity,
             "shipping_cost": self.shipping_cost, "description": self.description, "flagged": self.flagged,

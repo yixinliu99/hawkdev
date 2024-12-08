@@ -1,10 +1,15 @@
-from flask import request, jsonify
+from flask import Flask, request, jsonify
 from flask import current_app as app
+from flask_cors import CORS
 from Item.models.item import Item
 from werkzeug.exceptions import NotFound, BadRequest
 from flask import Blueprint
 
+
+
 item_api = Blueprint("item", __name__)
+CORS(item_api)
+
 @item_api.route("/items", methods=["GET"])
 def get_all_items():
     try:
