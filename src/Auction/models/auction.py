@@ -1,11 +1,13 @@
 import datetime
 
 from bson import ObjectId
+from google.protobuf.json_format import MessageToDict
 
 from Auction.consts.consts import AUCTIONS_COLLECTION
 from Auction.dao.mongoDAO import MongoDao
 from Auction.models.bid import Bid
 from Auction.service_connectors.user_connector import UserConnector
+from Auction.service_connectors.item_connector import ItemConnector
 
 
 class Auction:
@@ -50,7 +52,15 @@ class Auction:
     def create(self, dao: MongoDao) -> list[str]:
         create_dict = self.to_dict()
         del create_dict["_id"]
-        return dao.write_to_db(AUCTIONS_COLLECTION, create_dict)
+        response = dao.write_to_db(AUCTIONS_COLLECTION, create_dict)
+
+        # update item with auction id
+        item_connector = ItemConnector()
+        item = item_connector.get_item_by_id(self.item_id)
+        item["auction_id"] = response[0]
+        item_connector.update_item(self.item_id, item)
+
+        return response
 
     def update(self, dao: MongoDao) -> int:
         update_dict = self.to_dict()

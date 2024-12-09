@@ -2,11 +2,13 @@ import datetime
 import json
 
 import grpc
+from google.protobuf.json_format import MessageToDict
 
 import web_app.backend.connectors.auction.service_pb2 as service_pb2
 import web_app.backend.connectors.auction.service_pb2_grpc as service_pb2_grpc
 
 SERVER_ADDRESS = 'localhost:50010'
+
 
 def filter_auctions(query):
     with grpc.insecure_channel(SERVER_ADDRESS) as channel:
@@ -18,18 +20,22 @@ def filter_auctions(query):
 
         return get_response
 
-def create_auction(starting_price, starting_time, ending_time, seller_id, item_id):
+
+def create_auction(starting_price, starting_time, ending_time, seller_id, item_id, buy_now_price=None):
     with grpc.insecure_channel(SERVER_ADDRESS) as channel:
         stub = service_pb2_grpc.AuctionServiceStub(channel)
 
         create_request = service_pb2.CreateAuctionRequest(
             starting_price=starting_price,
-            starting_time=datetime.datetime.isoformat(starting_time),
-            ending_time=datetime.datetime.isoformat(ending_time),
+            starting_time=datetime.datetime.isoformat(starting_time) if isinstance(starting_time,
+                                                                                   datetime.datetime) else starting_time,
+            ending_time=datetime.datetime.isoformat(ending_time) if isinstance(ending_time,
+                                                                               datetime.datetime) else ending_time,
             seller_id=seller_id,
-            item_id=item_id
+            item_id=item_id,
+            buy_now_price=buy_now_price
         )
-        create_response = stub.CreateAuction(create_request)
+        create_response = MessageToDict(stub.CreateAuction(create_request))
 
         return create_response
 

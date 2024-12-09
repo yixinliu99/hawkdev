@@ -1,5 +1,7 @@
+import bson
 import pytest
 from flask import Flask
+import bson
 from unittest.mock import MagicMock, patch
 
 # Import the app object from your Flask application
@@ -38,7 +40,7 @@ def test_get_all_items(client, mock_dao, mock_item1, mock_item2):
     assert response.json == [mock_item1, mock_item2]
 
 def test_get_item_by_id_success(client, mock_dao, mock_item1):
-    mock_dao.read_from_db.return_value = mock_item1
+    mock_dao.read_from_db.return_value = [mock_item1]
     response = client.get("/items/1")
     assert response.status_code == 200
     assert response.json == mock_item1
@@ -84,7 +86,7 @@ def test_delete_item_not_found(client, mock_dao):
 def test_flag_item_success(client, mock_dao, mock_item1):
     flagged_item = mock_item1
     flagged_item["flagged"] = True
-    mock_dao.read_from_db.return_value = mock_item1
+    mock_dao.read_from_db.return_value = [mock_item1]
     mock_dao.update_db.return_value = flagged_item
 
     response = client.put("/items/flag/1")
