@@ -2,7 +2,9 @@ from flask import Flask
 from Item.dao.mongoDAO import MongoDao
 from Item.views import item_api
 import os
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
 app.dao = MongoDao()
 app.register_blueprint(item_api)
 
