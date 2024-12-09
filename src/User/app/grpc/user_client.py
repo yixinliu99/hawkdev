@@ -1,6 +1,6 @@
 import grpc
-from app import user_pb2
-from app import user_pb2_grpc
+from app.grpc import user_pb2
+from app.grpc import user_pb2_grpc
 import json
 
 def get_user_bids_from_auction(user_id):

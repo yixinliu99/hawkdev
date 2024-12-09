@@ -35,7 +35,9 @@ def signup():
         phone_number=phone_number,
         address=address,
         password=hashed_password,
-        user_type=user_type
+        user_type=user_type,
+        is_active = True,
+        is_blocked = False
     )
 
     # Add the user to the database
@@ -587,4 +589,3 @@ def get_item_details(item_id):
     if response.status_code == 200:
         return response.json()
     return None
-
