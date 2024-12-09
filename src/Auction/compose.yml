@@ -1,0 +1,20 @@
+services:
+  rpc:
+    build: .
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - USER_SERVICE_ADDRESS=http://127.0.0.1:5001
+    ports:
+      - "50010:50051"
+    networks:
+        - default
+        - user_external
+
+  mongodb:
+    image: mongo
+    ports:
+      - 27011:27017
+
+networks:
+  user_external:
+    external: true

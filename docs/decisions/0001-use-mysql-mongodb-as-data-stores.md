@@ -1,4 +1,4 @@
-# <!-- short title, representative of solved problem and found solution -->
+# <!-- Use MySQL and MongoDB as data stores of the project -->
 
 ## Context and Problem Statement
 A relational database and a NoSQL database are needed for the project to adapt different types of data. There are a lot of open-source or proprietary products available for databases. We should select the most suitable databases for our team.
