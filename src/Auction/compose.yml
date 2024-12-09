@@ -10,3 +10,13 @@ services:
     image: mongo
     ports:
       - 27011:27017
+
+  rest_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.rest_gateway
+    ports:
+      - "8081:8081"
+    depends_on:
+      - rpc
+      - mongodb
