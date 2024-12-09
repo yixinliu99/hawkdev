@@ -3,15 +3,16 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from app.routes.user_routes import user_bp
 from db import db, mongo
+import os
 
 # Initialize Flask app
 app = Flask(__name__)
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/userdb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/userdb' if not os.environ.get('MYSQL_URI') else os.environ.get('MYSQL_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'supersecretkey'  # Use an environment variable in production
-app.config['MONGO_URI'] = 'mongodb://localhost:27017'
+app.config['MONGO_URI'] = 'mongodb://localhost:27017' if not os.environ.get('MONGODB_URI') else os.environ.get('MONGODB_URI')
 
 # Initialize extensions
 #db = SQLAlchemy(app)
