@@ -10,8 +10,5 @@ COPY . /app
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port the app runs on (if applicable, e.g., Flask default port is 5000)
-EXPOSE 5001
-
 # Set the command to run the application
-CMD ["python", "app.py"]
+CMD ["python", "main.py"]

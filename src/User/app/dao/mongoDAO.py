@@ -1,9 +1,13 @@
 import pymongo
-
+import os
 class MongoDao:
     def __init__(self, uri="mongodb://localhost:27017/", database="auction_site"):
-        self.client = pymongo.MongoClient(uri)
+        if os.environ.get("MONGODB_URI"):
+            self.uri = os.environ.get("MONGODB_URI")
+        else:
+            self.uri = uri
 
+        self.client = pymongo.MongoClient(self.uri)
         self.db = self.client[database]
 
         # Explicitly check and create collections if they don't exist
