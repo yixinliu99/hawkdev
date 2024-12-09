@@ -20,15 +20,15 @@ def mock_dao():
 
 @pytest.fixture
 def mock_item1():
-    return {"user_id": 1, "starting_price": 1.0, "quantity": 1, "shipping_cost": 1.0, "description": "New item", "flagged": False, "category": "New", "keywords": ["New", "Item"], "_id": 1, "auction_id": 1}
+    return {"user_id": 1, "starting_price": 1.0, "quantity": 1, "shipping_cost": 1.0, "description": "New item", "flagged": False, "category": "New", "keywords": ["New", "Item"], "_id": "123", "auction_id": 1}
 
 @pytest.fixture
 def mock_item2():
-    return {"user_id": 2, "starting_price": 2.0, "quantity": 2, "shipping_cost": 2.0, "description": "New item2", "flagged": False, "category": "New", "keywords": ["New", "Item"], "_id": 2, "auction_id": 2}
+    return {"user_id": 2, "starting_price": 2.0, "quantity": 2, "shipping_cost": 2.0, "description": "New item2", "flagged": False, "category": "New", "keywords": ["New", "Item"], "_id": "asdasdsa", "auction_id": 2}
 
 @pytest.fixture
 def mock_flagged_item():
-    return {"user_id": 1, "starting_price": 1.0, "quantity": 1, "shipping_cost": 1.0, "description": "New item", "flagged": True, "category": "New", "keywords": ["New", "Item"], "_id": 1, "auction_id": 1}
+    return {"user_id": 1, "starting_price": 1.0, "quantity": 1, "shipping_cost": 1.0, "description": "New item", "flagged": True, "category": "New", "keywords": ["New", "Item"], "_id": "123", "auction_id": 1}
 
 
 def test_get_all_items(client, mock_dao, mock_item1, mock_item2):
@@ -95,3 +95,9 @@ def test_flag_item_not_found(client, mock_dao):
     mock_dao.read_from_db.return_value = None
     response = client.put("/items/flag/999")
     assert response.status_code == 404
+
+def test_filter_items(client, mock_dao, mock_item1):
+    mock_dao.read_from_db.return_value = [mock_item1]
+    response = client.post("/items/filter", json={"query": {"user_id": "123"}})
+    assert response.status_code == 200
+    assert response.json == [mock_item1]

@@ -19,7 +19,8 @@ class Item:
     def to_dict(self):
         return {"user_id": self.user_id, "starting_price": self.starting_price, "quantity": self.quantity,
                 "shipping_cost": self.shipping_cost, "description": self.description, "flagged": self.flagged,
-                "category": self.category, "keywords": self.keywords, "auction_id": self.auction_id, "_id": str(self.id)}
+                "category": self.category, "keywords": self.keywords, "auction_id": self.auction_id,
+                "_id": str(self.id)}
 
     @staticmethod
     def from_dict(data):
@@ -41,6 +42,11 @@ class Item:
         if "_id" in update_dict:
             del update_dict["_id"]
         return dao.update_db(ITEM_COLLECTION, {"_id": self.id}, {"$set": update_dict})
+
+    @staticmethod
+    def filter(dao, query):
+        res = dao.read_from_db(ITEM_COLLECTION, query)
+        return [Item.from_dict(r) for r in res]
 
     def delete(self, dao):
         res = dao.delete_from_db(ITEM_COLLECTION, {"_id": self.id})
