@@ -18,13 +18,3 @@ services:
 networks:
   user_external:
     external: true
-
-  rest_gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile.rest_gateway
-    ports:
-      - "8081:8081"
-    depends_on:
-      - rpc
-      - mongodb
