@@ -1,8 +1,9 @@
 import datetime
-from concurrent import futures
 import json
+import logging
+from concurrent import futures
+
 import grpc
-from bson import ObjectId
 from google.protobuf.json_format import (MessageToDict, )
 
 from Auction.consts.consts import AUCTION_SERVICE_PORT
@@ -10,6 +11,7 @@ from Auction.dao.mongoDAO import MongoDao
 from Auction.models.auction import Auction
 from Auction.rpc import service_pb2, service_pb2_grpc
 from Auction.task_scheduler.tasks import start_auction_task
+
 
 class AuctionService(service_pb2_grpc.AuctionServiceServicer):
     def __init__(self, dao: MongoDao):
@@ -29,7 +31,8 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
 
         # schedule auction to start at starting_time
         try:
-            start_auction_task.apply_async(args=[auction_id], countdown=(auction.starting_time - datetime.datetime.now(tz=datetime.timezone.utc)).total_seconds())
+            start_auction_task.apply_async(args=[auction_id], countdown=(
+                        auction.starting_time - datetime.datetime.now(tz=datetime.timezone.utc)).total_seconds())
 
             return service_pb2.CreateAuctionResponse(success=True, auction_id=auction_id, message="")
         except Exception as e:
@@ -42,7 +45,7 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
             auction = Auction.filter({"_id": request.auction_id}, self.dao)[0]
             # update auction
             auction_dict = auction.to_dict()
-            msg_dict = MessageToDict(request, preserving_proto_field_name=True) # dict of updated fields
+            msg_dict = MessageToDict(request, preserving_proto_field_name=True)  # dict of updated fields
             del msg_dict["auction_id"]
             for key, value in msg_dict.items():
                 if key in auction_dict:
@@ -59,7 +62,8 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
         try:
             auction_id = str(request.auction_id)
             start_auction_task.AsyncResult(auction_id).revoke()
-            start_auction_task.apply_async(args=[auction_id], countdown=(auction.starting_time - datetime.datetime.now(tz=datetime.timezone.utc)).total_seconds())
+            start_auction_task.apply_async(args=[auction_id], countdown=(
+                        auction.starting_time - datetime.datetime.now(tz=datetime.timezone.utc)).total_seconds())
 
             return service_pb2.UpdateAuctionResponse(success=True, modified_count=modified_count, message="")
         except Exception as e:
@@ -77,7 +81,8 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
         try:
             auction = Auction.filter({"_id": request.auction_id}, self.dao)[0]
             auction.stop_auction(self.dao)
-            return service_pb2.StopAuctionResponse(success=True, message=f"The auction {request.auction_id} has been stopped successfully!")
+            return service_pb2.StopAuctionResponse(success=True,
+                                                   message=f"The auction {request.auction_id} has been stopped successfully!")
         except Exception as e:
             return service_pb2.StopAuctionResponse(success=False, message=str(e))
 
@@ -113,12 +118,25 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
 
 
 def start_server():
+    LOG_FILE = "auction_service.log"
+    logging.basicConfig(
+        filename=LOG_FILE,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+    logging.getLogger().addHandler(logging.StreamHandler())
+
     dao = MongoDao()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     server.add_insecure_port(f"[::]:{AUCTION_SERVICE_PORT}")
     service_pb2_grpc.add_AuctionServiceServicer_to_server(AuctionService(dao), server)
     server.start()
-    server.wait_for_termination()
+    try:
+        logging.info(f"Server started at port {AUCTION_SERVICE_PORT}")
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        server.stop(0)
+        logging.info("Server stopped")
 
 
 if __name__ == "__main__":
