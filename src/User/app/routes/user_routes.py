@@ -225,7 +225,6 @@ def get_watchlist(user_id):
 
 # Remove item from watchlist (MongoDB)
 @user_bp.route("/watchlist/<user_id>/<category_id>", methods=["DELETE"])
-@user_bp.route("/watchlist/<user_id>/<category_id>", methods=["DELETE"])
 def remove_from_watchlist(user_id, category_id):
     try:
         # Fetch user from MySQL to validate
