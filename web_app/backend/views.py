@@ -1,22 +1,18 @@
 from flask import Flask, request, jsonify
-from flask import current_app as app
-from Item.models.item import Item
 from werkzeug.exceptions import NotFound, BadRequest
 from flask import Blueprint
-from connectors.auction.auction_rpc_client import filter_auctions, create_auction
-import bson
+from connectors.auction.auction_rpc_client import filter_auctions, create_auction, place_bid,buy_now
 auction_api = Blueprint("auction", __name__)
 
-@auction_api.route("/auctions", methods=["POST"])
-def get_auctions_by_ids():
-    data = request.json
-    if "auction_ids" not in data:
-        raise BadRequest("ids field is required")
-    data = [bson.ObjectId(auction_id) for auction_id in data["auction_ids"]]
-    query = {"_id": {"$in": data}}
-    response = filter_auctions(query)
+@auction_api.route("/auctions/<auction_id>", methods=["GET"])
+def get_auction_by_id(auction_id):
+    response = filter_auctions({"_id": auction_id})
 
-    return jsonify(response)
+    if not response['success']:
+        raise NotFound(response['message'])
+
+    return jsonify(response['auctions'][0])
+
 
 @auction_api.route("/auctions/create", methods=["POST"])
 def create_auction_api():
@@ -29,5 +25,20 @@ def create_auction_api():
         data["item_id"],
         float(data["buy_now_price"])
     )
+
+    return jsonify(response)
+
+
+@auction_api.route("/auctions/place_bid", methods=["POST"])
+def place_bid_api():
+    data = request.json
+    response = place_bid(data["auction_id"], data["user_id"], float(data["bid_amount"]))
+
+    return jsonify(response)
+
+@auction_api.route("/auctions/buy_now/<auction_id>", methods=["POST"])
+def buy_now_api(auction_id):
+    data = request.json
+    response = buy_now(auction_id, data["user_id"])
 
     return jsonify(response)

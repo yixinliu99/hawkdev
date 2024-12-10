@@ -218,6 +218,7 @@ const Bidding = () => {
     const handleShowCreateAuctionModal = (item) => {
         setSelectedItem(item);
         setShowCreateAuctionModal(true);
+
     };
 
     const handleShowPlaceBidModal = (item) => {
@@ -272,8 +273,86 @@ const Bidding = () => {
             console.error('Failed to complete purchase and add to cart', error);
             alert('There was an error processing your request. Please try again.');
         }
+
     };
     
+
+    const handleDeleteItem = async (item) => {
+        if (!window.confirm('Are you sure you want to delete this item?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`${config.ITEM_SERVICE_URL}/items/${item._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete item');
+            }
+
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to delete item', error);
+        }
+    }
+
+    const handleFlagItem = async (item) => {
+        if (!window.confirm('Are you sure you want to flag this item?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`${config.ITEM_SERVICE_URL}/items/flag/${item._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to flag item');
+            }
+
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to flag item', error);
+        }
+    }
+
+    const handleShowPlaceBidModal = (item) => {
+        setSelectedItem(item);
+        setShowPlaceBidModal(true);
+    }
+
+    const handleBuyNow = async (item) => {
+        if (!window.confirm('Are you sure you want to buy now?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`${config.AUCTION_SERVICE_URL}/auctions/buy_now/${item.auction_id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    user_id: user_id,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to buy now');
+            }
+
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to buy now', error);
+        }
+    }
 
     const handleDeleteItem = async (item) => {
         if (!window.confirm('Are you sure you want to delete this item?')) {
