@@ -78,4 +78,40 @@ const createAuction = async (auctionData, sellerID) => {
     return response.data;
 };
 
-export default {signup, login, logout, getProfile, updateProfile, getCart, removeFromCart, getItems, createAuction};
+const getWatchlist = async (userId) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        throw new Error("User is not authenticated.");
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const response = await axios.get(`${API_URL}/users/watchlist/${userId}`, { headers });
+    return response.data;
+};
+
+// Add a new criteria to the watchlist
+const addToWatchlist = async (userId, category_id, newCriteria) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        throw new Error("User is not authenticated.");
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const response = await axios.post(`${API_URL}/users/watchlist/${userId}/${category_id}`, newCriteria, { headers });
+    return response.data;
+};
+
+// Delete a criteria from the watchlist
+const deleteFromWatchlist = async (userId, category_id) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        throw new Error("User is not authenticated.");
+    }
+
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' };
+    const response = await axios.delete(`${API_URL}/users/watchlist/${userId}/${category_id}`, { headers });
+    return response.data;
+};
+
+
+export default {signup, login, logout, getProfile, updateProfile, getCart, removeFromCart, getItems, createAuction, addToWatchlist, getWatchlist, deleteFromWatchlist};

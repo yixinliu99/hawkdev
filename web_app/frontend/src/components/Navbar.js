@@ -49,6 +49,11 @@ const Navbar = () => {
           </Link>
         </li>
         <li style={{ margin: '0 10px' }}>
+          <Link to={`/watchlist/${user_id}`}>
+            Watchlist
+          </Link>
+        </li>
+        <li style={{ margin: '0 10px' }}>
           <button onClick={handleLogout}>
             Logout
           </button>
