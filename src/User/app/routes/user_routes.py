@@ -131,12 +131,12 @@ def update_profile(user_id):
     except Exception as e:
         return jsonify({"message": "Invalid token"}), 401
 
-@user_bp.route("/watchlist/<user_id>", methods=["POST"])
-def add_to_watchlist(user_id, item_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
-
+@user_bp.route("/watchlist/<user_id>/<category_id>", methods=["POST"])
+def add_to_watchlist(user_id, category_id):
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
+    
     try:
         #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
         #user_id = decoded.get("user_id")
@@ -147,9 +147,12 @@ def add_to_watchlist(user_id, item_id):
             return jsonify({"message": "User not found"}), 404
 
         data = request.get_json()
-        item_id = data.get("item_id")
+        print("Data", data)
+        #item_id = data.get("item_id")
+        category_id = category_id
         keyword = data.get("keyword")  # User-defined keyword
         category = data.get("category")  # User-defined category
+        max_price = data.get("maxPrice")
 
         # Store watchlist in MongoDB
         #watchlist_item = {
@@ -160,8 +163,9 @@ def add_to_watchlist(user_id, item_id):
         #}
 
         #mongo.db.watchlist.insert_one(watchlist_item)
-        mongo_dao.add_to_watchlist(user_id, item_id, keyword, category)
-        return jsonify({"message": "Item added to watchlist"}), 200
+        added_item= mongo_dao.add_to_watchlist(user_id, keyword, category, max_price, category_id)
+        #return jsonify({"message": "Item added to watchlist"}), 200
+        return jsonify(added_item),200
 
     except jwt.ExpiredSignatureError:
         return jsonify({"message": "Token has expired"}), 401
@@ -197,10 +201,12 @@ def get_watchlist(user_id):
             #item = item_dict.get(str(watchlist_item['itemId']))
             #if item:
             items.append({
-                "item_id": watchlist_item.get('item_id'),
+                #"item_id": watchlist_item.get('item_id'),
                 #"item_name": item['name'],
                 "keyword": watchlist_item.get('keyword', ''),  # Use .get() to handle missing fields
-                "category": watchlist_item.get('category', '')
+                "category": watchlist_item.get('category', ''),
+                "max_price": watchlist_item.get('max_price', ''),
+                "category_id": watchlist_item.get('category_id','')
                 })
             #else:
                 # If item not found in item service, add a placeholder or skip
@@ -218,37 +224,28 @@ def get_watchlist(user_id):
         return jsonify({"message": "Error fetching watchlist: " + str(e)}), 500
 
 # Remove item from watchlist (MongoDB)
-@user_bp.route("/watchlist/<user_id>", methods=["DELETE"])
-def remove_from_watchlist(user_id, item_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
-
+@user_bp.route("/watchlist/<user_id>/<category_id>", methods=["DELETE"])
+@user_bp.route("/watchlist/<user_id>/<category_id>", methods=["DELETE"])
+def remove_from_watchlist(user_id, category_id):
     try:
-        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        #user_id = decoded.get("user_id")
-
-        # Fetch user from MySQL
+        # Fetch user from MySQL to validate
         user = User.query.get(user_id)
         if not user:
             return jsonify({"message": "User not found"}), 404
-
-        data = request.get_json()
-        item_id = data.get("item_id")
-
+        
         # Remove item from the user's watchlist in MongoDB
-        #result = mongo.db.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
-        removed = mongo_dao.remove_from_watchlist(user_id, item_id)
-        #if result.deleted_count == 0:
+        removed = mongo_dao.remove_from_watchlist(user_id, category_id)
+        
+        # Check if anything was actually removed
         if not removed:
             return jsonify({"message": "Item not found in watchlist"}), 404
 
         return jsonify({"message": "Item removed from watchlist"}), 200
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({"message": "Token has expired"}), 401
     except Exception as e:
+        print(f"Error removing item from watchlist: {str(e)}")
         return jsonify({"message": "Error removing item from watchlist: " + str(e)}), 500
+
 
 
 @user_bp.route("/cart/<user_id>", methods=["POST"])

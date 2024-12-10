@@ -32,8 +32,11 @@ services:
     ports:
       - "3307:3306"
 
+ 
   mongodb:
     image: mongo
+    ports:
+      - 27017:27017
 
 networks:
   external:
