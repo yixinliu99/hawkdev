@@ -16,7 +16,7 @@ def ensure_connection(func: Callable) -> Callable:
 class MongoDao:
     def __init__(self, db_name: str=consts.MONGO_TEST_DB, uri: str=None):
         if not uri:
-            self.uri = os.environ.get("MONGODB_URI", "mongodb://127.0.0.1:27017")
+            self.uri = os.environ.get("MONGODB_URI", "mongodb://mongodb:27011")
         else:
             self.uri = uri
         self.db_name = db_name
