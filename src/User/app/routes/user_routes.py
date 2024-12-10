@@ -576,57 +576,64 @@ def item_watchlist_match(user_id):
         logger.debug(f"Received request for user_id: {user_id} with data: {request.json}")
 
         data = request.json
+        logger.debug(f"debuggData: {data}")
+
+        # Fetch the user's email from the database
         user_email = fetch_from_userdb(user_id)
         if not user_email:
+            logger.warning(f"User email not found for user_id {user_id}.")
             return jsonify({"message": "User email not found."}), 404
-        keyword = data.get("keyword", "").strip()
-        category = data.get("category", "").strip()
-        if isinstance(keyword, list):
-            keyword = keyword[0]
-        #max_price = str(data.get("starting_price", "").strip())
-        
-        #try:
-            #max_price = float(max_price)
-        #except ValueError:
-            #max_price = 0  # Default if conversion fails
 
-        # Log extracted data
-        logger.debug(f"Extracted data: user_email={user_email}, keyword={keyword}, category={category}")
+        # Extract and normalize keyword and category
+        keywords = data.get("keywords", [])
+        categories = data.get("categories", [])
+
+        # Flatten nested lists if necessary
+        if isinstance(keywords, list) and all(isinstance(k, list) for k in keywords):
+            keywords = [item for sublist in keywords for item in sublist]  # Flatten list of lists
+        elif isinstance(keywords, list):
+            keywords = keywords  # Already a flat list
+
+        if isinstance(categories, list):
+            categories = [c.strip() for c in categories]  # Clean up any whitespace
+        else:
+            categories = [categories.strip()] if categories else []
+
+        logger.debug(f"Normalized data: user_email={user_email}, keywords={keywords}, categories={categories}")
 
         # Fetch the user's watchlist
         check_in_watchlist = mongo_dao.get_watchlist(user_id)
         logger.debug(f"Fetched watchlist for user_id {user_id}: {check_in_watchlist}")
 
-        # Prepare the data for the notification
-        notification_data = {
-            "user_email": user_email,
-            "keyword": keyword,
-            "category": category,
-            #"max_price": max_price
-        }
-
-        # Check if any item in the watchlist matches
+        # Check if any item in the watchlist matches the criteria
         for item in check_in_watchlist:
-            logger.debug(f"Checking watchlist item: {item}")
+            item_keyword = item.get("keyword", "").strip()
+            item_category = item.get("category", "").strip()
+            logger.debug(f"Checking watchlist item: {item}, Keyword={item_keyword}, Category={item_category}")
 
-            # Convert watchlist max_price to float for comparison
-            logger.debug(f"Item debugged {item.get('keyword','')}, Keyword : {keyword}, Category debugged:{item.get('category','').strip()}, Category: {category}")
-
-            if (item.get('keyword', '').strip() == keyword and item.get('category', '').strip() == category):
+            if item_keyword in keywords and item_category in categories:
                 logger.info(f"Match found for item: {item}")
-                
+
+                # Prepare the data for the notification
+                notification_data = {
+                    "user_email": user_email,
+                    "keywords": keywords,
+                    "categories": categories,
+                }
+
                 # Send notification
                 send_notification("item_watchlist_match", notification_data)
                 return jsonify({"message": "Notification sent!"}), 200
 
-        # Log no match
+        # Log and respond when no matches are found
         logger.info(f"No matching item found in watchlist for user_id {user_id}.")
         return jsonify({"message": "No matching item found in watchlist."}), 200
 
     except Exception as e:
-        # Log the error
+        # Log and handle unexpected errors
         logger.error(f"Error in item_watchlist_match: {str(e)}", exc_info=True)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
 
 
 def get_item_details(item_id):
