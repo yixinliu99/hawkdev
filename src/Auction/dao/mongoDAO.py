@@ -16,7 +16,7 @@ def ensure_connection(func: Callable) -> Callable:
 class MongoDao:
     def __init__(self, db_name: str=consts.MONGO_TEST_DB, uri: str=None):
         if not uri:
-            self.uri = os.environ.get("MONGODB_URI", "mongodb://mongodb:27011")
+            self.uri = os.environ.get("MONGODB_URI", "mongodb://127.0.0.1:27017")
         else:
             self.uri = uri
         self.db_name = db_name
@@ -29,6 +29,7 @@ class MongoDao:
 
     def _connect_to_db(self):
         try:
+            print(self.uri)
             self.client = MongoClient(self.uri)
             self.db = self.client[self.db_name]
         except ConnectionFailure as e:
@@ -42,13 +43,17 @@ class MongoDao:
 
     @ensure_connection
     def write_to_db(self, collection_name: str, data: Any) -> list[str]:
+        print(collection_name)
         collection = self.db[collection_name]
+        print(collection)
         if not isinstance(data, list):
             data = [data]
         result = collection.insert_many(data)
+        print(result)
 
         # Return list of inserted ids as strings
         for i, _id in enumerate(result.inserted_ids):
+            print(i, _id)
             result.inserted_ids[i] = str(_id)
 
         return result.inserted_ids

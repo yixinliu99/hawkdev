@@ -1,16 +1,42 @@
 from flask import Flask, request, jsonify, render_template
 import grpc
-import admin_rpc.admin_service_pb2 as admin_service_pb2
-import admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+import admin.admin_rpc.admin_service_pb2 as admin_service_pb2
+import admin.admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+import Auction.rpc.service_pb2 as service_pb2
+import Auction.rpc.service_pb2_grpc as service_pb2_grpc
 from google.protobuf.json_format import MessageToJson
 import json
+from datetime import datetime, timedelta
+from bson import ObjectId
+
+import requests
 
 app = Flask(__name__)
 
 # gRPC connection setup
 def get_grpc_stub():
     channel = grpc.insecure_channel("localhost:50051")  # Connect to the gRPC server
-    return admin_service_pb2_grpc.AdminServiceStub(channel)
+    return service_pb2_grpc.AuctionServiceStub(channel)
+
+def auction_to_dict(auction):
+    bids = bids_to_list(auction.bids)
+    return {"_id": str(auction._id), "item_id": auction.item_id, "seller_id": auction.seller_id, "active": auction.active,
+            "starting_time": auction.starting_time,
+            "ending_time": auction.ending_time, "starting_price": auction.starting_price,
+            "current_price": auction.current_price, "bids": bids,
+            "buy_now_price": auction.buy_now_price if auction.buy_now_price else None}
+
+def bids_to_list(bids):
+    bid_list = []
+    for bid in bids:
+        temp = {
+            "user_id": bid.user_id,
+            "bid_amount": bid.bid_amount,
+            "bid_time": bid.time
+        }
+        bid_list.append(temp)
+
+    return bid_list
 
 
 @app.route("/")
@@ -27,8 +53,9 @@ def stop_auction():
             return jsonify({"error": "auction_id is required"}), 400
 
         stub = get_grpc_stub()
-        response = stub.StopAuctionEarly(admin_service_pb2.AuctionRequest(auction_id=auction_id))
-        return jsonify({"message": response.message})
+        stop_request = service_pb2.StopAuctionRequest(auction_id=auction_id)
+        stop_response = stub.StopAuction(stop_request)
+        return jsonify({"message": stop_response.message})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -53,19 +80,30 @@ def remove_block_user():
 def manage_category():
     try:
         action = request.json.get("action")
-        category_id = request.json.get("category_id")
-        category_name = request.json.get("category_name", "")
-
-        if action not in ["add", "modify", "remove"]:
+        old_category_name = request.json.get("old_category_name", "")
+        new_category_name = request.json.get("new_category_name", "")
+        print(action, old_category_name, new_category_name)
+        if action not in ["modify", "remove"]:
             return jsonify({"error": "Invalid action"}), 400
-        if not category_id:
-            return jsonify({"error": "category_id is required"}), 400
+        
+        # Get all items of this category
+        get_by_category_url = "http://127.0.0.1:9090/items/category/" + old_category_name
+        response = requests.get(get_by_category_url)
+        modified_count = len(response.json())
 
-        stub = get_grpc_stub()
-        response = stub.AddModifyRemoveCategory(
-            admin_service_pb2.CategoryRequest(action=action, category_id=category_id, category_name=category_name)
-        )
-        return jsonify({"message": response.message})
+        if action == "modify":
+            update_category = new_category_name
+        else:
+            update_category = None
+
+        # query = {"category": update_category}
+        update_url = "http://127.0.0.1:9090/items/"
+        for item in response.json():
+            item['category'] = update_category
+            temp_update_url = update_url + item['_id']
+            temp_rep = requests.put(temp_update_url, json=item)
+
+        return jsonify({"message": str(modified_count) + " items' category are updated."})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -73,20 +111,12 @@ def manage_category():
 # API Route: View flagged items
 @app.route("/api/flagged-items", methods=["GET"])
 def flagged_items():
+    item_filter_url = "http://127.0.0.1:9090/items/filter"
     try:
-        stub = get_grpc_stub()
-        response = stub.ViewFlaggedItems(admin_service_pb2.Empty())
-        items = [
-            {
-                "name": item.name,
-                "description": item.description,
-                "category": item.category,
-                "flag_reason": item.flag_reason,
-                "flagged_date": item.flagged_date,
-            }
-            for item in response.flagged_items
-        ]
-        return jsonify({"flagged_items": items})
+        query = {"flagged": True}
+        # json_query = json.dumps(query)
+        response = requests.post(item_filter_url, json=query)
+        return jsonify({"flagged_items": response.json()})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -95,23 +125,19 @@ def flagged_items():
 @app.route("/api/active-auctions", methods=["GET"])
 def active_auctions():
     try:
-        sort_by = request.args.get("sort_field", "end_time")
-
+        query = {"active": True}
+        json_query = json.dumps(query)
         stub = get_grpc_stub()
-        response = stub.ViewActiveAuctions(admin_service_pb2.SortingRequest(sort_by=sort_by))
-        auctions = [
-            {
-                "title": auction.title,
-                "description": auction.description,
-                "starting_price": auction.starting_price,
-                "current_price": auction.current_price,
-                "start_time": auction.start_time,
-                "end_time": auction.end_time,
-                "category": auction.category,
-            }
-            for auction in response.auctions
-        ]
-        return jsonify({"active_auctions": auctions})
+        response = stub.GetAuctions(service_pb2.GetAuctionRequest(query=json_query))
+        # print(type(response.auctions))
+
+        active_auction_list = []
+        for auction in response.auctions:
+            print(auction._id)
+            temp_dict = auction_to_dict(auction)
+            active_auction_list.append(temp_dict)
+
+        return jsonify({"active_auctions": active_auction_list})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -125,24 +151,25 @@ def metrics():
         weeks = int(request.args.get("weeks", 0))
         months = int(request.args.get("months", 0))
 
+        timeframe_days = days + (weeks * 7) + (months * 30)
+
+        # Query MongoDB for auctions closed in the calculated timeframe
+        start_date = datetime.isoformat(datetime.utcnow() - timedelta(days=timeframe_days))
+        # print(datetime.isoformat(start_date))
+        query = {"active": False, "ending_time": {"$gte": start_date}}
+        json_query = json.dumps(query)
         # Pass the values to the gRPC stub
         stub = get_grpc_stub()
-        response = stub.ExamineMetrics(
-            admin_service_pb2.MetricsRequest(days=days, weeks=weeks, months=months)
+        response = stub.GetAuctions(
+            service_pb2.GetAuctionRequest(query=json_query)
         )
-        auctions = [
-            {
-                "title": auction.title,
-                "description": auction.description,
-                "starting_price": auction.starting_price,
-                "current_price": auction.current_price,
-                "start_time": auction.start_time,
-                "end_time": auction.end_time,
-                "category": auction.category,
-            }
-            for auction in response.auctions
-        ]
-        return jsonify({"active_auctions": auctions})
+
+        active_auction_list = []
+        for auction in response.auctions:
+            temp_dict = auction_to_dict(auction)
+            active_auction_list.append(temp_dict)
+
+        return jsonify({"active_auctions": active_auction_list})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -182,13 +209,6 @@ def unresponded_emails():
         return jsonify({"unresponded_emails": emails})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-
-# # Frontend Route: Admin Dashboard
-# @app.route("/")
-# def dashboard():
-#     return render_template("dashboard.html")
 
 
 if __name__ == "__main__":

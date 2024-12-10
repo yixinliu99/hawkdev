@@ -17,9 +17,11 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
 
     def CreateAuction(self, request, context):
         auction = Auction.from_dict(MessageToDict(request, preserving_proto_field_name=True))
+        print(auction)
         # create auction
         try:
             auction_id = auction.create(self.dao)[0]
+            print(auction_id)
         except Exception as e:
             # rollback
             auction.delete(self.dao)
@@ -75,7 +77,7 @@ class AuctionService(service_pb2_grpc.AuctionServiceServicer):
         try:
             auction = Auction.filter({"_id": request.auction_id}, self.dao)[0]
             auction.stop_auction(self.dao)
-            return service_pb2.StopAuctionResponse(success=True, message="")
+            return service_pb2.StopAuctionResponse(success=True, message=f"The auction {request.auction_id} has been stopped successfully!")
         except Exception as e:
             return service_pb2.StopAuctionResponse(success=False, message=str(e))
 

@@ -4,6 +4,7 @@ from flask_cors import CORS
 from Item.models.item import Item
 from werkzeug.exceptions import NotFound, BadRequest
 from flask import Blueprint
+from bson import ObjectId
 
 
 
@@ -50,6 +51,7 @@ def get_items_by_user_id(user_id):
 def get_items_by_category(category):
     try:
         items = Item.get_by_category(app.dao, category)
+        # print(items)
         return jsonify([item.to_dict() for item in items]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -80,8 +82,9 @@ def update_item(item_id):
     try:
         if not request.json:
             raise BadRequest("Request body must be JSON.")
+        print(request.json)
         item = Item.from_dict(request.json)
-        item.id = item_id
+        item.id = ObjectId(item_id)
         updated_item_count = item.update(app.dao)
         if not updated_item_count:
             raise NotFound(f"Item with ID {item_id} not found for update.")
@@ -89,8 +92,10 @@ def update_item(item_id):
     except BadRequest as e:
         return jsonify({"error": str(e)}), 400
     except NotFound as e:
+        print(e)
         return jsonify({"error": str(e)}), 404
     except Exception as e:
+        # print(e)
         return jsonify({"error": str(e)}), 500
 
 @item_api.route("/items/<item_id>", methods=["DELETE"])

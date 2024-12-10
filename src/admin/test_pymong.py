@@ -1,6 +1,6 @@
 import pymongo
 from datetime import datetime, timedelta
-from consts.consts import *
+from admin.consts.consts import *
 
 import random
 
@@ -62,19 +62,20 @@ dummy_data['emails'] = [
     ]
 
 # collections = ['users', 'categories', 'items', 'emails']
-collections = ['emails']
-for collection_name in collections:
-    collection = db[collection_name]
-    collection.delete_many({})  # Clear existing data
-    collection.insert_many(dummy_data[collection_name])  # Insert new data
-    print(f"Inserted {len(dummy_data[collection_name])} documents into '{collection_name}' collection.")
+# collections = ['emails']
+# for collection_name in collections:
+#     collection = db[collection_name]
+#     collection.delete_many({})  # Clear existing data
+#     collection.insert_many(dummy_data[collection_name])  # Insert new data
+#     print(f"Inserted {len(dummy_data[collection_name])} documents into '{collection_name}' collection.")
 
-# auctions  = db['auctions']
+auctions  = db['auctions']
 
-# start_date = datetime.utcnow() - timedelta(days=10)
-# result = auctions.find({"status": "stopped", "end_time": {"$gte": start_date}})
+start_date = datetime.isoformat(datetime.utcnow() - timedelta(days=10))
+print(start_date)
+result = auctions.find({"active": False, "ending_time": {"$gte": start_date}})
 
-# for r in result:
-#     print(r)
+for r in result:
+    print(r)
 
     

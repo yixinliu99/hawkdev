@@ -1,4 +1,4 @@
-MONGO_TEST_DB="auction_site_test"
+MONGO_TEST_DB="auction_app"
 AUCTIONS_COLLECTION="auctions"
 BIDS_COLLECTION="bids"
 RABBITMQ_URI="amqp://guest@localhost:5672"

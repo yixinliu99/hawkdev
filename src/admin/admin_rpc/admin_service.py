@@ -1,8 +1,8 @@
 from concurrent import futures
 import grpc
-from dao.mongoDAO import MongoDAO
+from admin.dao.mongoDAO import MongoDAO
 from datetime import datetime, timedelta
-from admin_rpc.admin_service_pb2 import (
+from admin.admin_rpc.admin_service_pb2 import (
     Response,
     FlaggedItemsResponse,
     ActiveAuctionsResponse,
@@ -15,13 +15,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from consts.consts import *
-import admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
+from admin.consts.consts import *
+import admin.admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
 
 
 class AdminService(admin_service_pb2_grpc.AdminServiceServicer):
     def __init__(self):
-        self.dao = MongoDAO()
+        # self.dao = MongoDAO()
+        self.dao = None
 
     def StopAuctionEarly(self, request, context):
         result = self.dao.stop_auction_early(request.auction_id)

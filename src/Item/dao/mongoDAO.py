@@ -16,7 +16,7 @@ def ensure_connection(func: Callable) -> Callable:
 class MongoDao:
     def __init__(self, db_name: str=consts.MONGO_TEST_DB, uri: str=None):
         if not uri:
-            self.uri = os.environ.get("MONGODB_URI", "mongodb://mongodb:27010")
+            self.uri = os.environ.get("MONGODB_URI", "mongodb://localhost:27017")
         else:
             self.uri = uri
         self.db_name = db_name
@@ -75,7 +75,9 @@ class MongoDao:
         if many:
             result = collection.update_many(query, update)
         else:
+            print(collection, query, update)
             result = collection.update_one(query, update)
+            print(result)
         return result.modified_count
 
     @ensure_connection

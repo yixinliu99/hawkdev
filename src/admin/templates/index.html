@@ -46,14 +46,14 @@
 
         <!-- Manage Category -->
         <section id="manage-category" class="content-section">
-            <h2>Manage Categories</h2>
+            <h2>Manage Categories of Items</h2>
             <form id="manage-category-form">
-                <label for="action">Action (add/modify/remove):</label>
+                <label for="action">Action (modify/remove):</label>
                 <input type="text" id="action" name="action" required>
-                <label for="category-id">Category ID:</label>
-                <input type="text" id="category-id" name="category_id" required>
-                <label for="category-name">Category Name:</label>
-                <input type="text" id="category-name" name="category_name">
+                <label for="old-category-name">Old Category Name:</label>
+                <input type="text" id="old-category-name" name="category_name" required>
+                <label for="new-category-name">New Category Name:</label>
+                <input type="text" id="new-category-name" name="category_name">
                 <button type="submit">Submit</button>
             </form>
             <div id="manage-category-result"></div>

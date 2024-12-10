@@ -88,16 +88,16 @@ async function handleRemoveBlockUser(e) {
 async function handleManageCategory(e) {
     e.preventDefault();
     const action = document.getElementById("action").value;
-    const categoryId = document.getElementById("category-id").value;
-    const categoryName = document.getElementById("category-name").value;
+    const oldCategoryName = document.getElementById("old-category-name").value;
+    const newCategoryName = document.getElementById("new-category-name").value;
     const resultContainer = document.getElementById("manage-category-result");
     resultContainer.textContent = "Processing...";
 
     try {
         const data = await apiCall("/api/manage-category", "POST", {
             action,
-            category_id: categoryId,
-            category_name: categoryName,
+            old_category_name: oldCategoryName,
+            new_category_name: newCategoryName,
         });
         resultContainer.textContent = data.message;
     } catch (error) {
@@ -118,11 +118,12 @@ async function fetchFlaggedItems() {
                 .map(
                     (item) => `
                 <div class="flagged-item">
-                    <h3>${item.name}</h3>
+                    <h3>${item._id}</h3>
                     <p><strong>Description:</strong> ${item.description}</p>
                     <p><strong>Category:</strong> ${item.category}</p>
-                    <p><strong>Flag Reason:</strong> ${item.flag_reason}</p>
-                    <p><strong>Flagged Date:</strong> ${item.flagged_date}</p>
+                    <p><strong>Quanttiy:</strong> ${item.quantity}</p>
+                    <p><strong>Starting Price:</strong> ${item.starting_price}</p>
+                    <p><strong>Keywords:</strong> ${item.keywords}</p>
                 </div>
                 <hr>
             `
@@ -151,13 +152,13 @@ async function fetchActiveAuctions() {
                 .map(
                     (auction) => `
                 <div class="auction-item">
-                    <h3>${auction.title}</h3>
-                    <p><strong>Description:</strong> ${auction.description}</p>
+                    <h3>${auction._id}</h3>
+                    <p><strong>Item ID:</strong> ${auction.item_id}</p>
+                    <p><strong>Seller ID:</strong> ${auction.seller_id}</p>
                     <p><strong>Starting Price:</strong> $${auction.starting_price.toFixed(2)}</p>
                     <p><strong>Current Price:</strong> $${auction.current_price.toFixed(2)}</p>
-                    <p><strong>Start Time:</strong> ${new Date(auction.start_time).toLocaleString()}</p>
-                    <p><strong>End Time:</strong> ${new Date(auction.end_time).toLocaleString()}</p>
-                    <p><strong>Category:</strong> ${auction.category}</p>
+                    <p><strong>Start Time:</strong> ${new Date(auction.starting_time).toLocaleString()}</p>
+                    <p><strong>End Time:</strong> ${new Date(auction.ending_time).toLocaleString()}</p>
                 </div>
                 <hr>
             `
@@ -198,13 +199,13 @@ async function handleMetrics(e) {
                 .map(
                     (auction) => `
                 <div class="auction-item">
-                    <h3>${auction.title}</h3>
-                    <p><strong>Description:</strong> ${auction.description}</p>
+                    <h3>${auction._id}</h3>
+                    <p><strong>Item ID:</strong> ${auction.item_id}</p>
+                    <p><strong>Seller ID:</strong> ${auction.seller_id}</p>
                     <p><strong>Starting Price:</strong> $${auction.starting_price.toFixed(2)}</p>
                     <p><strong>Current Price:</strong> $${auction.current_price.toFixed(2)}</p>
-                    <p><strong>Start Time:</strong> ${new Date(auction.start_time).toLocaleString()}</p>
-                    <p><strong>End Time:</strong> ${new Date(auction.end_time).toLocaleString()}</p>
-                    <p><strong>Category:</strong> ${auction.category}</p>
+                    <p><strong>Start Time:</strong> ${new Date(auction.starting_time).toLocaleString()}</p>
+                    <p><strong>End Time:</strong> ${new Date(auction.ending_time).toLocaleString()}</p>
                 </div>
                 <hr>
             `

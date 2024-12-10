@@ -10,7 +10,7 @@ from Auction.service_connectors.user_connector import UserConnector
 
 class Auction:
     def __init__(self, item_id, seller_id, starting_time: str, ending_time: str, starting_price: float,
-                 current_price: float, buy_now_price: float = None, active: bool = False, bids: list[Bid] = None,
+                 current_price: float, buy_now_price: float = None, active: bool = True, bids: list[Bid] = None,
                  auction_id=None):
         self.id = auction_id
         self.item_id = item_id
@@ -35,6 +35,7 @@ class Auction:
         auction = Auction(item_id=auction_dict["item_id"],
                           seller_id=auction_dict["seller_id"],
                           active=auction_dict["active"] if "active" in auction_dict else False,
+                        #   active=True,
                           starting_time=auction_dict["starting_time"],
                           ending_time=auction_dict["ending_time"],
                           starting_price=float(auction_dict["starting_price"]),
@@ -50,6 +51,7 @@ class Auction:
     def create(self, dao: MongoDao) -> list[str]:
         create_dict = self.to_dict()
         del create_dict["_id"]
+        print(create_dict)
         return dao.write_to_db(AUCTIONS_COLLECTION, create_dict)
 
     def update(self, dao: MongoDao) -> int:

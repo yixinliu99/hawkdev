@@ -1,6 +1,6 @@
 import pymongo
 from datetime import datetime, timedelta
-from consts.consts import *
+from admin.consts.consts import *
 
 
 class MongoDAO:
