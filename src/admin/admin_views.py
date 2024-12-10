@@ -4,6 +4,8 @@ import admin.admin_rpc.admin_service_pb2 as admin_service_pb2
 import admin.admin_rpc.admin_service_pb2_grpc as admin_service_pb2_grpc
 import Auction.rpc.service_pb2 as service_pb2
 import Auction.rpc.service_pb2_grpc as service_pb2_grpc
+import User.app.grpc.user_pb2 as user_pb2
+import User.app.grpc.user_pb2_grpc as user_pb2_grpc
 from google.protobuf.json_format import MessageToJson
 import json
 from datetime import datetime, timedelta
@@ -17,6 +19,10 @@ app = Flask(__name__)
 def get_grpc_stub():
     channel = grpc.insecure_channel("localhost:50051")  # Connect to the gRPC server
     return service_pb2_grpc.AuctionServiceStub(channel)
+
+def get_user_grpc_stub():
+    channel = grpc.insecure_channel("localhost:50053")  # Connect to the gRPC server
+    return user_pb2_grpc.UserServiceStub(channel)
 
 def auction_to_dict(auction):
     bids = bids_to_list(auction.bids)
@@ -68,8 +74,8 @@ def remove_block_user():
         if not user_id:
             return jsonify({"error": "user_id is required"}), 400
 
-        stub = get_grpc_stub()
-        response = stub.RemoveAndBlockUser(admin_service_pb2.UserRequest(user_id=user_id))
+        stub = get_user_grpc_stub()
+        response = stub.RemoveAndBlockUser(user_pb2.UserRequest(user_id=user_id))
         return jsonify({"message": response.message})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
