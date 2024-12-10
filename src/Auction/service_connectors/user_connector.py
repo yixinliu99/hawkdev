@@ -9,6 +9,6 @@ class UserConnector:
         self.user_service_address = os.getenv("USER_SERVICE_ADDRESS")
 
     def add_item_to_shopping_cart(self, user_id, item_id):
-        response = requests.post(f"{self.user_service_address}/cart/{user_id}",
+        response = requests.post(f"{self.user_service_address}/api/users/cart/{user_id}",
                                  json={ "item_id": item_id})
         return response.json()

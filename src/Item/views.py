@@ -17,6 +17,14 @@ def get_all_items():
         return jsonify([item.to_dict() for item in items]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@item_api.route("/items/filter", methods=["POST"])
+def filter_items():
+    try:
+        items = Item.filter(app.dao, request.json)
+        return jsonify([item.to_dict() for item in items]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @item_api.route("/items/<item_id>", methods=["GET"])
 def get_item_by_id(item_id):

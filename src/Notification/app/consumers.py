@@ -5,7 +5,7 @@ from config.config import RABBITMQ_URI
 
 
 def callback(ch, method, properties, body):
-    message = json.loads(body)
+    message = body
     event_type = message.get("event_type")
 
     if event_type == "item_watchlist_match":

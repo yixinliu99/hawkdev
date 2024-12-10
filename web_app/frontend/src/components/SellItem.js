@@ -1,56 +1,63 @@
 import React, { useState } from 'react';
-import userService from '../services/userService'; 
+import axios from 'axios'; // Import axios for making HTTP requests
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating unique IDs
 
 const SellItem = () => {
-  const [itemID, setItemID] = useState('');
+  const [description, setDescription] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
-  const [startingTime, setStartingTime] = useState('');
-  const [endingTime, setEndingTime] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [shippingCost, setShippingCost] = useState('');
+  const [category, setCategory] = useState('');
+  const [keywords, setKeywords] = useState('');
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const sellerID = localStorage.getItem('userId');
-    if (!sellerID) {
-      setMessage('You must be logged in to create an auction.');
+    const userID = localStorage.getItem('userId');
+    if (!userID) {
+      setMessage('You must be logged in to create an item.');
       return;
     }
 
-    const auctionData = {
-      item_id: itemID,
-      seller_id: sellerID,
-      active: true,
-      starting_time: startingTime,
-      ending_time: endingTime,
+    const itemData = {
+      _id: uuidv4(), // Generate a unique ID
+      user_id: userID,
       starting_price: parseFloat(startingPrice),
-      current_price: parseFloat(startingPrice),
-      bids: [],
+      quantity: parseInt(quantity, 10),
+      shipping_cost: parseFloat(shippingCost),
+      description,
+      flagged: false,
+      category,
+      keywords: keywords.split(',').map(keyword => keyword.trim()), // Convert comma-separated string to array
     };
 
     try {
-      await userService.createAuction(auctionData, sellerID); 
-      setMessage('Auction created successfully!');
-      setItemID('');
+      const response = await axios.post('http://localhost:8081/items', itemData);
+      console.log('Response:', response);
+      setMessage(`Item created successfully! Item ID: ${response.data[0]}`);
+      setDescription('');
       setStartingPrice('');
-      setStartingTime('');
-      setEndingTime('');
+      setQuantity('');
+      setShippingCost('');
+      setCategory('');
+      setKeywords('');
     } catch (error) {
-      console.error('Error creating auction:', error);
-      setMessage('An error occurred while creating the auction.');
+      console.error('Error creating item:', error);
+      setMessage('An error occurred while creating the item.');
     }
   };
 
   return (
     <div>
-      <h2>Create Auction</h2>
+      <h2>Create Item</h2>
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Item ID:</label>
+          <label>Description:</label>
           <input
             type="text"
-            value={itemID}
-            onChange={(e) => setItemID(e.target.value)}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             required
           />
         </div>
@@ -64,24 +71,42 @@ const SellItem = () => {
           />
         </div>
         <div>
-          <label>Starting Time:</label>
+          <label>Quantity:</label>
           <input
-            type="datetime-local"
-            value={startingTime}
-            onChange={(e) => setStartingTime(e.target.value)}
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
             required
           />
         </div>
         <div>
-          <label>Ending Time:</label>
+          <label>Shipping Cost:</label>
           <input
-            type="datetime-local"
-            value={endingTime}
-            onChange={(e) => setEndingTime(e.target.value)}
+            type="number"
+            value={shippingCost}
+            onChange={(e) => setShippingCost(e.target.value)}
             required
           />
         </div>
-        <button type="submit">Create Auction</button>
+        <div>
+          <label>Category:</label>
+          <input
+            type="text"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label>Keywords (comma-separated):</label>
+          <input
+            type="text"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit">Create Item</button>
       </form>
       {message && <p>{message}</p>}
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const token = localStorage.getItem('token'); 
@@ -21,21 +21,39 @@ const Navbar = () => {
 
   return (
     <nav style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', backgroundColor: '#f8f9fa' }}>
-      <div>Logo</div>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Link to={`/profile/${user_id}`} style={{ margin: '0 10px' }}>
-          <i className="fas fa-user"></i> Profile
-        </Link>
-        <Link to={`/cart/${user_id}`} style={{ margin: '0 10px' }}>
-          <i className="fas fa-shopping-cart"></i> Cart
-        </Link>
-        <Link to={`/sell-item/${user_id}`} style={{ margin: '0 10px' }}>
-          <i className="fas fa-plus-circle"></i> Sell Item
-        </Link>
-        <button onClick={handleLogout} style={{ margin: '0 10px' }}>
-          Logout
-        </button>
-      </div>
+      <div>Hawkdev Auction</div>
+      <ul style={{ display: 'flex', alignItems: 'center', listStyleType: 'none', padding: 0, margin: 0 }}>
+        <li style={{ margin: '0 10px' }}>
+          <Link to={`/profile/${user_id}`}>
+            Profile
+          </Link>
+        </li>
+        <li style={{ margin: '0 10px' }}>
+          <Link to="/items">
+            Home
+          </Link>
+        </li>
+        <li style={{ margin: '0 10px' }}>
+          <Link to={`/cart/${user_id}`}>
+            Cart
+          </Link>
+        </li>
+        <li style={{ margin: '0 10px' }}>
+          <Link to={`/sell-item/${user_id}`}>
+            Sell Item
+          </Link>
+        </li>
+        <li style={{ margin: '0 10px' }}>
+          <Link to={`/bidding/${user_id}`}>
+            Bidding
+          </Link>
+        </li>
+        <li style={{ margin: '0 10px' }}>
+          <button onClick={handleLogout}>
+            Logout
+          </button>
+        </li>
+      </ul>
     </nav>
   );
 };
