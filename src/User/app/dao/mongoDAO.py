@@ -1,7 +1,7 @@
 import pymongo
 import os
 class MongoDao:
-    def __init__(self, uri="mongodb://localhost:27017/", database="auction_site"):
+    def __init__(self, uri="mongodb://mongodb:27017/", database="auction_site"):
         if os.environ.get("MONGODB_URI"):
             self.uri = os.environ.get("MONGODB_URI")
         else:
@@ -15,22 +15,25 @@ class MongoDao:
         self.watchlist = self.db['watchlist'] if 'watchlist' in self.db.list_collection_names() else self.db.create_collection('watchlist')
         self.cart = self.db['cart'] if 'cart' in self.db.list_collection_names() else self.db.create_collection('cart')
 
-    def add_to_watchlist(self, user_id, item_id, keyword, category):
+    def add_to_watchlist(self, user_id, keyword, category, max_price, category_id):
         watchlist_item = {
             "user_id": user_id,
-            "item_id": item_id,
             "keyword": keyword,
-            "category": category
+            "category": category,
+            "max_price": max_price,
+            "category_id": category_id
         }
 
-        self.watchlist.insert_one(watchlist_item)
+        result = self.watchlist.insert_one(watchlist_item)
+        watchlist_item["_id"] = str(result.inserted_id)
+        return watchlist_item
 
     def get_watchlist(self, user_id):
         watchlist_items_cursor = self.watchlist.find({"user_id": user_id})
         return list(watchlist_items_cursor)  
 
-    def remove_from_watchlist(self, user_id, item_id):
-        result = self.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
+    def remove_from_watchlist(self, user_id, category_id):
+        result = self.watchlist.delete_one({"user_id": user_id, "category_id": category_id})
         
         return result.deleted_count > 0  
 
