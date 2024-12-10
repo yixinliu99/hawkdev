@@ -12,7 +12,7 @@ from Auction.service_connectors.item_connector import ItemConnector
 
 class Auction:
     def __init__(self, item_id, seller_id, starting_time: str, ending_time: str, starting_price: float,
-                 current_price: float, buy_now_price: float = None, active: bool = False, bids: list[Bid] = None,
+                 current_price: float, buy_now_price: float = None, active: bool = True, bids: list[Bid] = None,
                  auction_id=None):
         self.id = auction_id
         self.item_id = item_id
@@ -37,6 +37,7 @@ class Auction:
         auction = Auction(item_id=auction_dict["item_id"],
                           seller_id=auction_dict["seller_id"],
                           active=auction_dict["active"] if "active" in auction_dict else False,
+                        #   active=True,
                           starting_time=auction_dict["starting_time"],
                           ending_time=auction_dict["ending_time"],
                           starting_price=float(auction_dict["starting_price"]),

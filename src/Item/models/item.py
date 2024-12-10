@@ -41,6 +41,7 @@ class Item:
         update_dict = self.to_dict()
         if "_id" in update_dict:
             del update_dict["_id"]
+        print(self.id, update_dict)
         return dao.update_db(ITEM_COLLECTION, {"_id": self.id}, {"$set": update_dict})
 
     @staticmethod

@@ -1,3 +1,3 @@
-MONGO_TEST_DB="auction_site_test"
+MONGO_TEST_DB="auction_app"
 ITEM_COLLECTION="items"
 ITEM_SERVICE_PORT=5000

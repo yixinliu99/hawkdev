@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package admin;
+
+service AdminService {
+  rpc StopAuctionEarly (AuctionRequest) returns (Response);
+  rpc RemoveAndBlockUser (UserRequest) returns (Response);
+  rpc AddModifyRemoveCategory (CategoryRequest) returns (Response);
+  rpc ViewFlaggedItems (Empty) returns (FlaggedItemsResponse);
+  rpc ViewActiveAuctions (SortingRequest) returns (ActiveAuctionsResponse);
+  rpc ExamineMetrics (MetricsRequest) returns (ActiveAuctionsResponse);
+  rpc RespondToEmails (EmailRequest) returns (Response);
+  rpc ViewUnrespondedEmails (Empty) returns (UnrespondedEmailsResponse);
+}
+
+message AuctionRequest {
+  string auction_id = 1;
+}
+
+message Auction {
+    string title = 1;
+    string description = 2;
+    double starting_price = 3;
+    double current_price = 4;
+    string start_time = 5;
+    string end_time = 6;
+    string category = 7;
+}
+
+message ActiveAuctionsResponse {
+    repeated Auction auctions = 1;
+}
+
+message UserRequest {
+  string user_id = 1;
+}
+
+message CategoryRequest {
+  string action = 1; // "add", "modify", "remove"
+  string category_id = 2;
+  string category_name = 3;
+}
+
+message SortingRequest {
+  string sort_by = 1; // "end_time"
+}
+
+message MetricsRequest {
+    int32 days = 1;
+    int32 weeks = 2;
+    int32 months = 3;
+}
+
+message MetricsResponse {
+    repeated string auctions_in_metrics = 1;
+}
+
+message EmailRequest {
+  string email_id = 1;
+  string response_text = 2;
+}
+
+message FlaggedItem {
+    string name = 1;
+    string description = 2;
+    string category = 3;
+    string flag_reason = 4;
+    string flagged_date = 5;
+}
+
+message FlaggedItemsResponse {
+  repeated FlaggedItem flagged_items = 1;
+}
+
+message Response {
+  string message = 1;
+}
+
+message Empty {}
+
+message Email {
+    string email_id = 1;
+    string user_email = 2;
+    string message = 3;
+}
+
+message UnrespondedEmailsResponse {
+    repeated Email emails = 1;
+}
