@@ -4,6 +4,7 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017
       - USER_SERVICE_ADDRESS=http://user-service-nginx
+      - ITEM_SERVICE_ADDRESS=http://item-service-nginx
     ports:
       - "50010:50051"
     networks:

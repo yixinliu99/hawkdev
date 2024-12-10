@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from app import user_pb2 as user__pb2
+from Auction.rpc import service_pb2 as Auction_dot_rpc_dot_service__pb2
 
 GRPC_GENERATED_VERSION = '1.68.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in user_pb2_grpc.py depends on'
+        + f' but the generated code in Auction/rpc/service_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -39,33 +39,38 @@ class AuctionServiceStub(object):
         """
         self.CreateAuction = channel.unary_unary(
                 '/AuctionService/CreateAuction',
-                request_serializer=user__pb2.CreateAuctionRequest.SerializeToString,
-                response_deserializer=user__pb2.CreateAuctionResponse.FromString,
+                request_serializer=Auction_dot_rpc_dot_service__pb2.CreateAuctionRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.CreateAuctionResponse.FromString,
                 _registered_method=True)
         self.UpdateAuction = channel.unary_unary(
                 '/AuctionService/UpdateAuction',
-                request_serializer=user__pb2.UpdateAuctionRequest.SerializeToString,
-                response_deserializer=user__pb2.UpdateAuctionResponse.FromString,
+                request_serializer=Auction_dot_rpc_dot_service__pb2.UpdateAuctionRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.UpdateAuctionResponse.FromString,
                 _registered_method=True)
         self.StartAuction = channel.unary_unary(
                 '/AuctionService/StartAuction',
-                request_serializer=user__pb2.StartAuctionRequest.SerializeToString,
-                response_deserializer=user__pb2.StartAuctionResponse.FromString,
+                request_serializer=Auction_dot_rpc_dot_service__pb2.StartAuctionRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.StartAuctionResponse.FromString,
                 _registered_method=True)
         self.StopAuction = channel.unary_unary(
                 '/AuctionService/StopAuction',
-                request_serializer=user__pb2.StopAuctionRequest.SerializeToString,
-                response_deserializer=user__pb2.StopAuctionResponse.FromString,
+                request_serializer=Auction_dot_rpc_dot_service__pb2.StopAuctionRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.StopAuctionResponse.FromString,
                 _registered_method=True)
         self.PlaceBid = channel.unary_unary(
                 '/AuctionService/PlaceBid',
-                request_serializer=user__pb2.PlaceBidRequest.SerializeToString,
-                response_deserializer=user__pb2.PlaceBidResponse.FromString,
+                request_serializer=Auction_dot_rpc_dot_service__pb2.PlaceBidRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.PlaceBidResponse.FromString,
                 _registered_method=True)
         self.GetAuctions = channel.unary_unary(
                 '/AuctionService/GetAuctions',
-                request_serializer=user__pb2.GetAuctionRequest.SerializeToString,
-                response_deserializer=user__pb2.GetAuctionResponse.FromString,
+                request_serializer=Auction_dot_rpc_dot_service__pb2.GetAuctionRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.GetAuctionResponse.FromString,
+                _registered_method=True)
+        self.BuyItemNow = channel.unary_unary(
+                '/AuctionService/BuyItemNow',
+                request_serializer=Auction_dot_rpc_dot_service__pb2.BuyItemNowRequest.SerializeToString,
+                response_deserializer=Auction_dot_rpc_dot_service__pb2.BuyItemNowResponse.FromString,
                 _registered_method=True)
 
 
@@ -117,38 +122,49 @@ class AuctionServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def BuyItemNow(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AuctionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'CreateAuction': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateAuction,
-                    request_deserializer=user__pb2.CreateAuctionRequest.FromString,
-                    response_serializer=user__pb2.CreateAuctionResponse.SerializeToString,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.CreateAuctionRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.CreateAuctionResponse.SerializeToString,
             ),
             'UpdateAuction': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateAuction,
-                    request_deserializer=user__pb2.UpdateAuctionRequest.FromString,
-                    response_serializer=user__pb2.UpdateAuctionResponse.SerializeToString,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.UpdateAuctionRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.UpdateAuctionResponse.SerializeToString,
             ),
             'StartAuction': grpc.unary_unary_rpc_method_handler(
                     servicer.StartAuction,
-                    request_deserializer=user__pb2.StartAuctionRequest.FromString,
-                    response_serializer=user__pb2.StartAuctionResponse.SerializeToString,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.StartAuctionRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.StartAuctionResponse.SerializeToString,
             ),
             'StopAuction': grpc.unary_unary_rpc_method_handler(
                     servicer.StopAuction,
-                    request_deserializer=user__pb2.StopAuctionRequest.FromString,
-                    response_serializer=user__pb2.StopAuctionResponse.SerializeToString,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.StopAuctionRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.StopAuctionResponse.SerializeToString,
             ),
             'PlaceBid': grpc.unary_unary_rpc_method_handler(
                     servicer.PlaceBid,
-                    request_deserializer=user__pb2.PlaceBidRequest.FromString,
-                    response_serializer=user__pb2.PlaceBidResponse.SerializeToString,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.PlaceBidRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.PlaceBidResponse.SerializeToString,
             ),
             'GetAuctions': grpc.unary_unary_rpc_method_handler(
                     servicer.GetAuctions,
-                    request_deserializer=user__pb2.GetAuctionRequest.FromString,
-                    response_serializer=user__pb2.GetAuctionResponse.SerializeToString,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.GetAuctionRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.GetAuctionResponse.SerializeToString,
+            ),
+            'BuyItemNow': grpc.unary_unary_rpc_method_handler(
+                    servicer.BuyItemNow,
+                    request_deserializer=Auction_dot_rpc_dot_service__pb2.BuyItemNowRequest.FromString,
+                    response_serializer=Auction_dot_rpc_dot_service__pb2.BuyItemNowResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -179,8 +195,8 @@ class AuctionService(object):
             request,
             target,
             '/AuctionService/CreateAuction',
-            user__pb2.CreateAuctionRequest.SerializeToString,
-            user__pb2.CreateAuctionResponse.FromString,
+            Auction_dot_rpc_dot_service__pb2.CreateAuctionRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.CreateAuctionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -206,8 +222,8 @@ class AuctionService(object):
             request,
             target,
             '/AuctionService/UpdateAuction',
-            user__pb2.UpdateAuctionRequest.SerializeToString,
-            user__pb2.UpdateAuctionResponse.FromString,
+            Auction_dot_rpc_dot_service__pb2.UpdateAuctionRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.UpdateAuctionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -233,8 +249,8 @@ class AuctionService(object):
             request,
             target,
             '/AuctionService/StartAuction',
-            user__pb2.StartAuctionRequest.SerializeToString,
-            user__pb2.StartAuctionResponse.FromString,
+            Auction_dot_rpc_dot_service__pb2.StartAuctionRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.StartAuctionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -260,8 +276,8 @@ class AuctionService(object):
             request,
             target,
             '/AuctionService/StopAuction',
-            user__pb2.StopAuctionRequest.SerializeToString,
-            user__pb2.StopAuctionResponse.FromString,
+            Auction_dot_rpc_dot_service__pb2.StopAuctionRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.StopAuctionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -287,8 +303,8 @@ class AuctionService(object):
             request,
             target,
             '/AuctionService/PlaceBid',
-            user__pb2.PlaceBidRequest.SerializeToString,
-            user__pb2.PlaceBidResponse.FromString,
+            Auction_dot_rpc_dot_service__pb2.PlaceBidRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.PlaceBidResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -314,8 +330,35 @@ class AuctionService(object):
             request,
             target,
             '/AuctionService/GetAuctions',
-            user__pb2.GetAuctionRequest.SerializeToString,
-            user__pb2.GetAuctionResponse.FromString,
+            Auction_dot_rpc_dot_service__pb2.GetAuctionRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.GetAuctionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def BuyItemNow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/AuctionService/BuyItemNow',
+            Auction_dot_rpc_dot_service__pb2.BuyItemNowRequest.SerializeToString,
+            Auction_dot_rpc_dot_service__pb2.BuyItemNowResponse.FromString,
             options,
             channel_credentials,
             insecure,

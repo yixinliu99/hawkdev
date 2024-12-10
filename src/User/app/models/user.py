@@ -15,6 +15,8 @@ class User(db.Model):
     address = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     user_type = db.Column(db.String(20), nullable=False) # "user" or "admin"
+    is_active = db.Column(db.Boolean, default=True)  
+    is_blocked = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<User {self.username}>'

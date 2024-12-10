@@ -16,7 +16,7 @@ app.config['MONGO_URI'] = 'mongodb://localhost:27017' if not os.environ.get('MON
 
 # Initialize extensions
 #db = SQLAlchemy(app)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Register blueprints
 app.register_blueprint(user_bp, url_prefix="/api/users")

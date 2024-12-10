@@ -20,6 +20,18 @@ service AuctionService {/*
 
     rpc GetAuctions (GetAuctionRequest) returns (GetAuctionResponse);}
 
+service UserService {
+    rpc RemoveAndBlockUser (UserRequest) returns (UserResponse);
+}
+
+message UserRequest {
+    string user_id = 1;
+}
+
+message UserResponse {
+    string message = 1;
+}
+
 message Bid {string user_id = 1;
     float bid_amount = 2;
     string bid_time = 3;}

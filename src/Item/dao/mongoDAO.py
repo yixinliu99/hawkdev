@@ -1,6 +1,7 @@
 import os
 from typing import Any, Callable
 
+import bson
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
@@ -58,6 +59,8 @@ class MongoDao:
         """
         Retrieve documents based on query ignoring hidden documents.
         """
+        if "_id" in query and not isinstance(query["_id"], bson.ObjectId):
+            query["_id"] = bson.ObjectId(query["_id"])
         collection = self.db[collection_name]
         query = {**query, "hidden": {"$ne": True}}
         results = []
@@ -71,6 +74,8 @@ class MongoDao:
         """
         Replace filtered documents with update.
         """
+        if "_id" in query and not isinstance(query["_id"], bson.ObjectId):
+            query["_id"] = bson.ObjectId(query["_id"])
         collection = self.db[collection_name]
         if many:
             result = collection.update_many(query, update)

@@ -1,5 +1,5 @@
 from Item.consts.consts import ITEM_COLLECTION
-
+import bson
 
 class Item:
     def __init__(self, user_id: str, starting_price: float, quantity: int, shipping_cost: float, description: str,
@@ -56,7 +56,10 @@ class Item:
     @staticmethod
     def get_by_id(dao, item_id):
         r = dao.read_from_db(ITEM_COLLECTION, {"_id": item_id})
-        return Item.from_dict(r) if r else None
+        if r:
+            return Item.from_dict(r[0])
+        else:
+            return None
 
     @staticmethod
     def get_all(dao):
