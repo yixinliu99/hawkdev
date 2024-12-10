@@ -579,8 +579,8 @@ def item_watchlist_match(user_id):
         user_email = fetch_from_userdb(user_id)
         if not user_email:
             return jsonify({"message": "User email not found."}), 404
-        keyword = data.get("keyword", "")
-        category = data.get("category", "")
+        keyword = data.get("keyword", "").strip()
+        category = data.get("category", "").strip()
         if isinstance(keyword, list):
             keyword = keyword[0]
         #max_price = str(data.get("starting_price", "").strip())

@@ -113,5 +113,28 @@ const deleteFromWatchlist = async (userId, category_id) => {
     return response.data;
 };
 
+export const itemWatchlistMatch = async (userId, watchlistCriteria) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error("User is not authenticated.");
+    }
+  
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'  // Make sure the Content-Type is application/json
+    };
+  
+    try {
+      // Send a POST request with the userId and watchlistCriteria
+      const response = await axios.post(
+        `${API_URL}/users/item_watchlist_match/${userId}`, 
+        watchlistCriteria,
+        { headers }
+      );
+      return response.data;  // Assuming this returns the match result
+    } catch (error) {
+      throw new Error("Error fetching watchlist match: " + error.message);
+    }
+  };
 
-export default {signup, login, logout, getProfile, updateProfile, getCart, removeFromCart, getItems, createAuction, addToWatchlist, getWatchlist, deleteFromWatchlist};
+export default {signup, login, logout, getProfile, updateProfile, getCart, removeFromCart, getItems, createAuction, addToWatchlist, getWatchlist, deleteFromWatchlist, itemWatchlistMatch};
