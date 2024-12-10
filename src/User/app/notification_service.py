@@ -2,7 +2,7 @@ import pika
 import json
 
 
-RABBITMQ_URI = "amqp://guest:guest@localhost:5672"  
+RABBITMQ_URI = "amqp://guest:guest@rabbitmq:5672"  
 
 def send_notification(event_type, data):
     """

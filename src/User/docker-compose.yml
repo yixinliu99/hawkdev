@@ -19,6 +19,7 @@ services:
     environment:
       - MYSQL_URI=mysql+pymysql://root:root@db:3306/userdb
       - MONGODB_URI=mongodb://mongodb:27017
+      - ITEM_SERVICE_ADDRESS=http://item-service-nginx
     depends_on:
       - db
       - mongodb
@@ -32,8 +33,11 @@ services:
     ports:
       - "3307:3306"
 
+ 
   mongodb:
     image: mongo
+    ports:
+      - 27017:27017
 
 networks:
   external:

@@ -8,6 +8,7 @@ import requests
 from app.grpc.user_client import get_user_bids_from_auction, create_auction
 from app.dao.mongoDAO import MongoDao
 from app.notification_service import send_notification
+import os
 # from app.models.item import Item
 
 user_bp = Blueprint("users", __name__)
@@ -131,12 +132,12 @@ def update_profile(user_id):
     except Exception as e:
         return jsonify({"message": "Invalid token"}), 401
 
-@user_bp.route("/watchlist/<user_id>", methods=["POST"])
-def add_to_watchlist(user_id, item_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
-
+@user_bp.route("/watchlist/<user_id>/<category_id>", methods=["POST"])
+def add_to_watchlist(user_id, category_id):
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
+    
     try:
         #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
         #user_id = decoded.get("user_id")
@@ -147,9 +148,12 @@ def add_to_watchlist(user_id, item_id):
             return jsonify({"message": "User not found"}), 404
 
         data = request.get_json()
-        item_id = data.get("item_id")
+        print("Data", data)
+        #item_id = data.get("item_id")
+        category_id = category_id
         keyword = data.get("keyword")  # User-defined keyword
         category = data.get("category")  # User-defined category
+        max_price = data.get("maxPrice")
 
         # Store watchlist in MongoDB
         #watchlist_item = {
@@ -160,8 +164,9 @@ def add_to_watchlist(user_id, item_id):
         #}
 
         #mongo.db.watchlist.insert_one(watchlist_item)
-        mongo_dao.add_to_watchlist(user_id, item_id, keyword, category)
-        return jsonify({"message": "Item added to watchlist"}), 200
+        added_item= mongo_dao.add_to_watchlist(user_id, keyword, category, max_price, category_id)
+        #return jsonify({"message": "Item added to watchlist"}), 200
+        return jsonify(added_item),200
 
     except jwt.ExpiredSignatureError:
         return jsonify({"message": "Token has expired"}), 401
@@ -171,9 +176,9 @@ def add_to_watchlist(user_id, item_id):
 # Get user's watchlist (MongoDB)
 @user_bp.route("/watchlist/<user_id>", methods=["GET"])
 def get_watchlist(user_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
 
     try:
         #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
@@ -197,10 +202,12 @@ def get_watchlist(user_id):
             #item = item_dict.get(str(watchlist_item['itemId']))
             #if item:
             items.append({
-                "item_id": watchlist_item.get('item_id'),
+                #"item_id": watchlist_item.get('item_id'),
                 #"item_name": item['name'],
                 "keyword": watchlist_item.get('keyword', ''),  # Use .get() to handle missing fields
-                "category": watchlist_item.get('category', '')
+                "category": watchlist_item.get('category', ''),
+                "max_price": watchlist_item.get('max_price', ''),
+                "category_id": watchlist_item.get('category_id','')
                 })
             #else:
                 # If item not found in item service, add a placeholder or skip
@@ -218,37 +225,27 @@ def get_watchlist(user_id):
         return jsonify({"message": "Error fetching watchlist: " + str(e)}), 500
 
 # Remove item from watchlist (MongoDB)
-@user_bp.route("/watchlist/<user_id>", methods=["DELETE"])
-def remove_from_watchlist(user_id, item_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
-
+@user_bp.route("/watchlist/<user_id>/<category_id>", methods=["DELETE"])
+def remove_from_watchlist(user_id, category_id):
     try:
-        #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
-        #user_id = decoded.get("user_id")
-
-        # Fetch user from MySQL
+        # Fetch user from MySQL to validate
         user = User.query.get(user_id)
         if not user:
             return jsonify({"message": "User not found"}), 404
-
-        data = request.get_json()
-        item_id = data.get("item_id")
-
+        
         # Remove item from the user's watchlist in MongoDB
-        #result = mongo.db.watchlist.delete_one({"user_id": user_id, "item_id": item_id})
-        removed = mongo_dao.remove_from_watchlist(user_id, item_id)
-        #if result.deleted_count == 0:
+        removed = mongo_dao.remove_from_watchlist(user_id, category_id)
+        
+        # Check if anything was actually removed
         if not removed:
             return jsonify({"message": "Item not found in watchlist"}), 404
 
         return jsonify({"message": "Item removed from watchlist"}), 200
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({"message": "Token has expired"}), 401
     except Exception as e:
+        print(f"Error removing item from watchlist: {str(e)}")
         return jsonify({"message": "Error removing item from watchlist: " + str(e)}), 500
+
 
 
 @user_bp.route("/cart/<user_id>", methods=["POST"])
@@ -271,7 +268,8 @@ def add_to_cart(user_id, item_id):
             return jsonify({"message": "Item ID is required"}), 400
 
         # Fetch item details from item microservice
-        item_service_url = f"http://localhost:8081/api/items/{item_id}"  # Adjust this URL
+        item_service_url = os.getenv("ITEM_SERVICE_ADDRESS") + f"/items/{item_id}" if os.getenv("ITEM_SERVICE_ADDRESS") else f"http://localhost:8081/api/items/{item_id}"
+
         item_response = requests.get(item_service_url)
 
         if item_response.status_code != 200:
@@ -562,30 +560,100 @@ def create_auction_route(seller_id):
     else:
         return jsonify({"message": "Failed to create auction"}), 500
 
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)  # You can set this to INFO or ERROR in production
+logger = logging.getLogger(__name__)
+
 @user_bp.route("/item_watchlist_match/<user_id>", methods=["POST"])
 def item_watchlist_match(user_id):
     """
-    Example route that triggers when an item matches a user's watchlist criteria.
+    Route that triggers when an item matches a user's watchlist criteria.
     """
-    data = request.json
-    user_email = data.get("email")
-    item_description = data.get("item_description")
+    try:
+        # Log the incoming request data
+        logger.debug(f"Received request for user_id: {user_id} with data: {request.json}")
 
-    # Prepare data for the notification
-    notification_data = {
-        "user_email": user_email,
-        "item_description": item_description
-    }
+        data = request.json
+        logger.debug(f"debuggData: {data}")
 
-    # Send the notification to RabbitMQ
-    send_notification("item_watchlist_match", notification_data)
+        # Fetch the user's email from the database
+        user_email = fetch_from_userdb(user_id)
+        if not user_email:
+            logger.warning(f"User email not found for user_id {user_id}.")
+            return jsonify({"message": "User email not found."}), 404
 
-    return jsonify({"message": "Notification sent!"}), 200
+        # Extract and normalize keyword and category
+        keywords = data.get("keywords", [])
+        categories = data.get("categories", [])
+
+        # Flatten nested lists if necessary
+        if isinstance(keywords, list) and all(isinstance(k, list) for k in keywords):
+            keywords = [item for sublist in keywords for item in sublist]  # Flatten list of lists
+        elif isinstance(keywords, list):
+            keywords = keywords  # Already a flat list
+
+        if isinstance(categories, list):
+            categories = [c.strip() for c in categories]  # Clean up any whitespace
+        else:
+            categories = [categories.strip()] if categories else []
+
+        logger.debug(f"Normalized data: user_email={user_email}, keywords={keywords}, categories={categories}")
+
+        # Fetch the user's watchlist
+        check_in_watchlist = mongo_dao.get_watchlist(user_id)
+        logger.debug(f"Fetched watchlist for user_id {user_id}: {check_in_watchlist}")
+
+        # Check if any item in the watchlist matches the criteria
+        for item in check_in_watchlist:
+            item_keyword = item.get("keyword", "").strip()
+            item_category = item.get("category", "").strip()
+            logger.debug(f"Checking watchlist item: {item}, Keyword={item_keyword}, Category={item_category}")
+
+            if item_keyword in keywords and item_category in categories:
+                logger.info(f"Match found for item: {item}")
+
+                # Prepare the data for the notification
+                notification_data = {
+                    "user_email": user_email,
+                    "keywords": keywords,
+                    "categories": categories,
+                }
+
+                # Send notification
+                send_notification("item_watchlist_match", notification_data)
+                return jsonify({"message": "Notification sent!"}), 200
+
+        # Log and respond when no matches are found
+        logger.info(f"No matching item found in watchlist for user_id {user_id}.")
+        return jsonify({"message": "No matching item found in watchlist."}), 200
+
+    except Exception as e:
+        # Log and handle unexpected errors
+        logger.error(f"Error in item_watchlist_match: {str(e)}", exc_info=True)
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+
 
 def get_item_details(item_id):
     """Fetch item details from Item Microservice."""
-    item_service_url = f"http://localhost:8081/api/items/{item_id}"  
+
+    item_service_url = os.getenv("ITEM_SERVICE_ADDRESS") + f"/items/{item_id}" if os.getenv("ITEM_SERVICE_ADDRESS") else f"http://localhost:8081/api/items/{item_id}"
+
     response = requests.get(item_service_url)
     if response.status_code == 200:
         return response.json()
     return None
+
+def fetch_from_userdb(user_id):
+    try:
+        user = db.session.query(User.email).filter_by(id=user_id).first()
+        if user:
+            return user.email  # You can return the user object or transform it as needed
+        else:
+            return None  # Or raise an error if you prefer
+
+    except Exception as e:
+        print(f"Error fetching user email: {e}")
+        return None    
