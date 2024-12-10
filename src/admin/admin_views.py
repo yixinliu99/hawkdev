@@ -24,6 +24,10 @@ def get_user_grpc_stub():
     channel = grpc.insecure_channel("localhost:50053")  # Connect to the gRPC server
     return user_pb2_grpc.UserServiceStub(channel)
 
+def get_admin_grpc_stub():
+    channel = grpc.insecure_channel("localhost:50052")  # Connect to the gRPC server
+    return admin_service_pb2_grpc.AdminServiceStub(channel)
+
 def auction_to_dict(auction):
     bids = bids_to_list(auction.bids)
     return {"_id": str(auction._id), "item_id": auction.item_id, "seller_id": auction.seller_id, "active": auction.active,
@@ -190,7 +194,7 @@ def respond_email():
         if not email_id or not response_text:
             return jsonify({"error": "email_id and response_text are required"}), 400
 
-        stub = get_grpc_stub()
+        stub = get_admin_grpc_stub()
         response = stub.RespondToEmails(admin_service_pb2.EmailRequest(email_id=email_id, response_text=response_text))
         return jsonify({"message": response.message})
     except Exception as e:
@@ -200,7 +204,7 @@ def respond_email():
 def unresponded_emails():
     try:
         # Call gRPC service
-        stub = get_grpc_stub()
+        stub = get_admin_grpc_stub()
         response = stub.ViewUnrespondedEmails(admin_service_pb2.Empty())
 
         # Convert response to JSON format
