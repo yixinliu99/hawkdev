@@ -10,8 +10,9 @@ def callback(ch, method, properties, body):
 
     if event_type == "item_watchlist_match":
         user_email = message.get("user_email")
-        item_name = message.get("item_description")
-        send_email(user_email, "Item Matched Watchlist", f"The item '{item_name}' matches your criteria.")
+        keyword = message.get("keyword")
+        category = message.get("category")
+        send_email(user_email, "Item Matched Watchlist", f"The keyword '{keyword}', category '{category}' 'matches your criteria.")
 
     elif event_type == "new_bid_on_item":
         seller_email = message.get("seller_email")
