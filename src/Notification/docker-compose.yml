@@ -1,4 +1,3 @@
-version: '3'
 services:
   notification_service:
     build:
@@ -10,10 +9,6 @@ services:
       RABBITMQ_URI: "amqp://guest:guest@rabbitmq:5672"
     depends_on:
       - rabbitmq
-    networks:
-      - auction_default
-      - item_default
-      - notification_user_default  
 
   rabbitmq:
     image: "rabbitmq:3-management"
@@ -24,17 +19,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - auction_default
-      - item_default
-      - notification_user_default  
 
 networks:
-  auction_default:
-    driver: bridge
-  item_default:
-    driver: bridge
-  user_default:
-    driver: bridge  # Define the user_default network here
-  user_external:
+  default:
     driver: bridge
