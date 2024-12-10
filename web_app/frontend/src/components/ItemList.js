@@ -63,8 +63,8 @@ const ItemList = () => {
         }
       });
     } catch (error) {
-      //console.error('Error checking with watchlist:', error);
-      setMessage('Error checking with watchlist.');
+      console.error('Error checking with watchlist:', error);
+      //setMessage('Error checking with watchlist.');
     }
   };
 
