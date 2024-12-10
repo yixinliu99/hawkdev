@@ -175,9 +175,9 @@ def add_to_watchlist(user_id, category_id):
 # Get user's watchlist (MongoDB)
 @user_bp.route("/watchlist/<user_id>", methods=["GET"])
 def get_watchlist(user_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"message": "Missing token"}), 401
+    #token = request.headers.get('Authorization')
+    #if not token:
+        #return jsonify({"message": "Missing token"}), 401
 
     try:
         #decoded = jwt.decode(token.split(" ")[1], 'supersecretkey', algorithms=['HS256'])
@@ -558,25 +558,74 @@ def create_auction_route(seller_id):
     else:
         return jsonify({"message": "Failed to create auction"}), 500
 
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)  # You can set this to INFO or ERROR in production
+logger = logging.getLogger(__name__)
+
 @user_bp.route("/item_watchlist_match/<user_id>", methods=["POST"])
 def item_watchlist_match(user_id):
     """
-    Example route that triggers when an item matches a user's watchlist criteria.
+    Route that triggers when an item matches a user's watchlist criteria.
     """
-    data = request.json
-    user_email = data.get("email")
-    item_description = data.get("item_description")
+    try:
+        # Log the incoming request data
+        logger.debug(f"Received request for user_id: {user_id} with data: {request.json}")
 
-    # Prepare data for the notification
-    notification_data = {
-        "user_email": user_email,
-        "item_description": item_description
-    }
+        data = request.json
+        user_email = fetch_from_userdb(user_id)
+        if not user_email:
+            return jsonify({"message": "User email not found."}), 404
+        keyword = data.get("keyword", "")
+        category = data.get("category", "")
+        if isinstance(keyword, list):
+            keyword = keyword[0]
+        #max_price = str(data.get("starting_price", "").strip())
+        
+        #try:
+            #max_price = float(max_price)
+        #except ValueError:
+            #max_price = 0  # Default if conversion fails
 
-    # Send the notification to RabbitMQ
-    send_notification("item_watchlist_match", notification_data)
+        # Log extracted data
+        logger.debug(f"Extracted data: user_email={user_email}, keyword={keyword}, category={category}")
 
-    return jsonify({"message": "Notification sent!"}), 200
+        # Fetch the user's watchlist
+        check_in_watchlist = mongo_dao.get_watchlist(user_id)
+        logger.debug(f"Fetched watchlist for user_id {user_id}: {check_in_watchlist}")
+
+        # Prepare the data for the notification
+        notification_data = {
+            "user_email": user_email,
+            "keyword": keyword,
+            "category": category,
+            #"max_price": max_price
+        }
+
+        # Check if any item in the watchlist matches
+        for item in check_in_watchlist:
+            logger.debug(f"Checking watchlist item: {item}")
+
+            # Convert watchlist max_price to float for comparison
+            logger.debug(f"Item debugged {item.get('keyword','')}, Keyword : {keyword}, Category debugged:{item.get('category','').strip()}, Category: {category}")
+
+            if (item.get('keyword', '').strip() == keyword and item.get('category', '').strip() == category):
+                logger.info(f"Match found for item: {item}")
+                
+                # Send notification
+                send_notification("item_watchlist_match", notification_data)
+                return jsonify({"message": "Notification sent!"}), 200
+
+        # Log no match
+        logger.info(f"No matching item found in watchlist for user_id {user_id}.")
+        return jsonify({"message": "No matching item found in watchlist."}), 200
+
+    except Exception as e:
+        # Log the error
+        logger.error(f"Error in item_watchlist_match: {str(e)}", exc_info=True)
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
 
 def get_item_details(item_id):
     """Fetch item details from Item Microservice."""
@@ -585,3 +634,15 @@ def get_item_details(item_id):
     if response.status_code == 200:
         return response.json()
     return None
+
+def fetch_from_userdb(user_id):
+    try:
+        user = db.session.query(User.email).filter_by(id=user_id).first()
+        if user:
+            return user.email  # You can return the user object or transform it as needed
+        else:
+            return None  # Or raise an error if you prefer
+
+    except Exception as e:
+        print(f"Error fetching user email: {e}")
+        return None    
