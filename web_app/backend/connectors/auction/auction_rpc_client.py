@@ -16,7 +16,7 @@ def filter_auctions(query):
 
         json_query = json.dumps(query)
         get_request = service_pb2.GetAuctionRequest(query=json_query)
-        get_response = stub.GetAuctions(get_request)
+        get_response = MessageToDict(stub.GetAuctions(get_request), preserving_proto_field_name=True)
 
         return get_response
 
@@ -38,6 +38,25 @@ def create_auction(starting_price, starting_time, ending_time, seller_id, item_i
         create_response = MessageToDict(stub.CreateAuction(create_request))
 
         return create_response
+
+def place_bid(auction_id, user_id, bid_amount):
+    with grpc.insecure_channel(SERVER_ADDRESS) as channel:
+        stub = service_pb2_grpc.AuctionServiceStub(channel)
+
+        place_bid_request = service_pb2.PlaceBidRequest(auction_id=auction_id, user_id=user_id, bid_amount=bid_amount)
+        place_bid_response = MessageToDict(stub.PlaceBid(place_bid_request))
+
+        return place_bid_response
+
+def buy_now(auction_id, user_id):
+    with grpc.insecure_channel(SERVER_ADDRESS) as channel:
+        stub = service_pb2_grpc.AuctionServiceStub(channel)
+
+        buy_now_request = service_pb2.BuyItemNowRequest(auction_id=auction_id, user_id=user_id)
+        buy_now_response = MessageToDict(stub.BuyItemNow(buy_now_request))
+
+        return buy_now_response
+
 
 # def run():
 #     # Connect to the server

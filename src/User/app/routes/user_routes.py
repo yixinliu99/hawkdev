@@ -8,6 +8,7 @@ import requests
 from app.grpc.user_client import get_user_bids_from_auction, create_auction
 from app.dao.mongoDAO import MongoDao
 from app.notification_service import send_notification
+import os
 # from app.models.item import Item
 
 user_bp = Blueprint("users", __name__)
@@ -271,7 +272,7 @@ def add_to_cart(user_id, item_id):
             return jsonify({"message": "Item ID is required"}), 400
 
         # Fetch item details from item microservice
-        item_service_url = f"http://localhost:8081/api/items/{item_id}"  # Adjust this URL
+        item_service_url = os.getenv("ITEM_SERVICE_ADDRESS") + f"/items/{item_id}" if os.getenv("ITEM_SERVICE_ADDRESS") else f"http://localhost:8081/api/items/{item_id}"
         item_response = requests.get(item_service_url)
 
         if item_response.status_code != 200:
@@ -584,7 +585,7 @@ def item_watchlist_match(user_id):
 
 def get_item_details(item_id):
     """Fetch item details from Item Microservice."""
-    item_service_url = f"http://localhost:8081/api/items/{item_id}"  
+    item_service_url = os.getenv("ITEM_SERVICE_ADDRESS") + f"/items/{item_id}" if os.getenv("ITEM_SERVICE_ADDRESS") else f"http://localhost:8081/api/items/{item_id}"
     response = requests.get(item_service_url)
     if response.status_code == 200:
         return response.json()
