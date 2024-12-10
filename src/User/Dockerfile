@@ -10,5 +10,7 @@ COPY . /app
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. app/grpc/user.proto
+
 # Set the command to run the application
 CMD ["python", "main.py"]

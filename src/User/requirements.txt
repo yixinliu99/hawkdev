@@ -10,3 +10,4 @@ requests
 grpcio
 protobuf
 cryptography
+grpcio-tools
